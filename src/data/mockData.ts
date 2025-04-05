@@ -1,8 +1,7 @@
-
 import { 
   PPEItem, 
   PPEInstance, 
-  Employee, The data
+  Employee, 
   PPEMovement, 
   DashboardStats, 
   Alert 
