@@ -8,13 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { isStorageAvailable } from '@/utils/storage';
+import { AddItemDialog } from '@/components/Inventory/AddItemDialog';
+import { HistoryDialog } from '@/components/Inventory/HistoryDialog';
+import { AssignDialog } from '@/components/Inventory/AssignDialog';
 
 const Inventory = () => {
   const { toast } = useToast();
   const [localInstances, setLocalInstances] = useState(ppeInstances);
-  
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+
   useEffect(() => {
-    // Verificar se o localStorage está disponível
     if (!isStorageAvailable()) {
       toast({
         title: "Atenção",
@@ -24,16 +30,30 @@ const Inventory = () => {
     }
   }, [toast]);
 
-  const inventoryData = localInstances.map(instance => {
-    const catalogItem = ppeCatalog.find(item => item.id === instance.catalogItemId);
-    return {
-      ...instance,
-      type: catalogItem?.type || 'Desconhecido',
-      description: catalogItem?.description || 'Desconhecido',
-      approvalNumber: catalogItem?.approvalNumber || 'N/A',
-      supplier: catalogItem?.supplier || 'Desconhecido',
-    };
-  });
+  const handleExport = () => {
+    try {
+      const dataStr = JSON.stringify(localInstances, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = 'inventory-report.json';
+
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      toast({
+        title: "Sucesso",
+        description: "Relatório exportado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível exportar o relatório.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getDaysUntilExpiry = (expiryDate: string) => {
     const today = new Date();
@@ -48,13 +68,10 @@ const Inventory = () => {
         instance.id === instanceId ? { ...instance, status: newStatus } : instance
       );
       
-      // Atualiza estado local
       setLocalInstances(updatedInstances);
       
-      // Atualiza no localStorage
       const success = updatePPEInstances(updatedInstances);
       
-      // Exibe feedback ao usuário
       toast({
         title: success ? "Sucesso" : "Atenção",
         description: success 
@@ -72,6 +89,17 @@ const Inventory = () => {
     }
   };
 
+  const inventoryData = localInstances.map(instance => {
+    const catalogItem = ppeCatalog.find(item => item.id === instance.catalogItemId);
+    return {
+      ...instance,
+      type: catalogItem?.type || 'Desconhecido',
+      description: catalogItem?.description || 'Desconhecido',
+      approvalNumber: catalogItem?.approvalNumber || 'N/A',
+      supplier: catalogItem?.supplier || 'Desconhecido',
+    };
+  });
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="flex justify-between items-center">
@@ -82,10 +110,16 @@ const Inventory = () => {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button className="bg-safety-blue hover:bg-safety-blue-dark">
+          <Button 
+            className="bg-safety-blue hover:bg-safety-blue-dark"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
             <Plus className="mr-2 h-4 w-4" /> Adicionar ao Estoque
           </Button>
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={handleExport}
+          >
             <ArrowUpDown className="mr-2 h-4 w-4" /> Exportar Relatório
           </Button>
         </div>
@@ -189,10 +223,28 @@ const Inventory = () => {
               { 
                 key: 'actions', 
                 header: 'Ações',
-                render: () => (
+                render: (item) => (
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">Histórico</Button>
-                    <Button variant="outline" size="sm">Atribuir</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedItemId(item.id);
+                        setIsHistoryDialogOpen(true);
+                      }}
+                    >
+                      Histórico
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedItemId(item.id);
+                        setIsAssignDialogOpen(true);
+                      }}
+                    >
+                      Atribuir
+                    </Button>
                   </div>
                 )
               }
@@ -202,6 +254,23 @@ const Inventory = () => {
           />
         </CardContent>
       </Card>
+
+      <AddItemDialog 
+        isOpen={isAddDialogOpen} 
+        onClose={() => setIsAddDialogOpen(false)} 
+      />
+      
+      <HistoryDialog 
+        isOpen={isHistoryDialogOpen}
+        onClose={() => setIsHistoryDialogOpen(false)}
+        itemId={selectedItemId}
+      />
+      
+      <AssignDialog 
+        isOpen={isAssignDialogOpen}
+        onClose={() => setIsAssignDialogOpen(false)}
+        itemId={selectedItemId}
+      />
     </div>
   );
 };
