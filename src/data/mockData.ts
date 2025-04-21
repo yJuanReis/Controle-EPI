@@ -6,7 +6,7 @@ import {
   DashboardStats, 
   Alert 
 } from '../types';
-import { loadStoredData, saveData } from '../utils/storage';
+import { loadStoredData, saveData, STORAGE_KEYS } from '../utils/storage';
 
 const defaultPPECatalog: PPEItem[] = [
   {
@@ -259,26 +259,30 @@ const defaultPPEMovements: PPEMovement[] = [
 ];
 
 // Load data from localStorage or use defaults
-export const ppeCatalog = loadStoredData('ppe_catalog', defaultPPECatalog);
-export const ppeInstances = loadStoredData('ppe_instances', defaultPPEInstances);
-export const employees = loadStoredData('employees', defaultEmployees);
-export const ppeMovements = loadStoredData('ppe_movements', defaultPPEMovements);
+export const ppeCatalog = loadStoredData(STORAGE_KEYS.PPE_CATALOG, defaultPPECatalog);
+export const ppeInstances = loadStoredData(STORAGE_KEYS.PPE_INSTANCES, defaultPPEInstances);
+export const employees = loadStoredData(STORAGE_KEYS.EMPLOYEES, defaultEmployees);
+export const ppeMovements = loadStoredData(STORAGE_KEYS.MOVEMENTS, defaultPPEMovements);
 
 // Save data to localStorage whenever it changes
-export const updatePPECatalog = (newCatalog: PPEItem[]) => {
-  saveData('ppe_catalog', newCatalog);
+export const updatePPECatalog = (newCatalog: PPEItem[]): boolean => {
+  const success = saveData(STORAGE_KEYS.PPE_CATALOG, newCatalog);
+  return success;
 };
 
-export const updatePPEInstances = (newInstances: PPEInstance[]) => {
-  saveData('ppe_instances', newInstances);
+export const updatePPEInstances = (newInstances: PPEInstance[]): boolean => {
+  const success = saveData(STORAGE_KEYS.PPE_INSTANCES, newInstances);
+  return success;
 };
 
-export const updateEmployees = (newEmployees: Employee[]) => {
-  saveData('employees', newEmployees);
+export const updateEmployees = (newEmployees: Employee[]): boolean => {
+  const success = saveData(STORAGE_KEYS.EMPLOYEES, newEmployees);
+  return success;
 };
 
-export const updatePPEMovements = (newMovements: PPEMovement[]) => {
-  saveData('ppe_movements', newMovements);
+export const updatePPEMovements = (newMovements: PPEMovement[]): boolean => {
+  const success = saveData(STORAGE_KEYS.MOVEMENTS, newMovements);
+  return success;
 };
 
 // Dashboard Statistics

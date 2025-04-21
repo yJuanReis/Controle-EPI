@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ppeInstances, ppeCatalog, updatePPEInstances } from '@/data/mockData';
 import { DataTable } from '@/components/UI/DataTable';
 import { Button } from '@/components/ui/button';
@@ -6,16 +6,32 @@ import { Plus, ArrowUpDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { isStorageAvailable } from '@/utils/storage';
 
 const Inventory = () => {
-  const inventoryData = ppeInstances.map(instance => {
+  const { toast } = useToast();
+  const [localInstances, setLocalInstances] = useState(ppeInstances);
+  
+  useEffect(() => {
+    // Verificar se o localStorage está disponível
+    if (!isStorageAvailable()) {
+      toast({
+        title: "Atenção",
+        description: "O armazenamento local não está disponível. Suas alterações não serão salvas.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  const inventoryData = localInstances.map(instance => {
     const catalogItem = ppeCatalog.find(item => item.id === instance.catalogItemId);
     return {
       ...instance,
-      type: catalogItem?.type || 'Unknown',
-      description: catalogItem?.description || 'Unknown',
+      type: catalogItem?.type || 'Desconhecido',
+      description: catalogItem?.description || 'Desconhecido',
       approvalNumber: catalogItem?.approvalNumber || 'N/A',
-      supplier: catalogItem?.supplier || 'Unknown',
+      supplier: catalogItem?.supplier || 'Desconhecido',
     };
   });
 
@@ -27,10 +43,33 @@ const Inventory = () => {
   };
 
   const handleStatusChange = (instanceId: string, newStatus: 'available' | 'in-use' | 'discarded') => {
-    const updatedInstances = ppeInstances.map(instance => 
-      instance.id === instanceId ? { ...instance, status: newStatus } : instance
-    );
-    updatePPEInstances(updatedInstances);
+    try {
+      const updatedInstances = localInstances.map(instance => 
+        instance.id === instanceId ? { ...instance, status: newStatus } : instance
+      );
+      
+      // Atualiza estado local
+      setLocalInstances(updatedInstances);
+      
+      // Atualiza no localStorage
+      const success = updatePPEInstances(updatedInstances);
+      
+      // Exibe feedback ao usuário
+      toast({
+        title: success ? "Sucesso" : "Atenção",
+        description: success 
+          ? "Status do EPI atualizado com sucesso." 
+          : "O status foi atualizado, mas não foi possível salvar permanentemente.",
+        variant: success ? "default" : "destructive"
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar o status do EPI.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
