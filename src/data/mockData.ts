@@ -6,9 +6,9 @@ import {
   DashboardStats, 
   Alert 
 } from '../types';
+import { loadStoredData, saveData } from '../utils/storage';
 
-// PPE Catalog data
-export const ppeCatalog: PPEItem[] = [
+const defaultPPECatalog: PPEItem[] = [
   {
     id: 'ppe-001',
     type: 'Capacete',
@@ -83,8 +83,7 @@ export const ppeCatalog: PPEItem[] = [
   }
 ];
 
-// PPE Instances
-export const ppeInstances: PPEInstance[] = [
+const defaultPPEInstances: PPEInstance[] = [
   {
     id: 'inst-001',
     catalogItemId: 'ppe-001',
@@ -134,8 +133,7 @@ export const ppeInstances: PPEInstance[] = [
   }
 ];
 
-// Employees
-export const employees: Employee[] = [
+const defaultEmployees: Employee[] = [
   {
     id: 'emp-001',
     name: 'Carlos Oliveira',
@@ -207,8 +205,7 @@ export const employees: Employee[] = [
   }
 ];
 
-// PPE Movements
-export const ppeMovements: PPEMovement[] = [
+const defaultPPEMovements: PPEMovement[] = [
   {
     id: 'mov-001',
     type: 'delivery',
@@ -260,6 +257,29 @@ export const ppeMovements: PPEMovement[] = [
     digitalSignature: 'sig-12349'
   }
 ];
+
+// Load data from localStorage or use defaults
+export const ppeCatalog = loadStoredData('ppe_catalog', defaultPPECatalog);
+export const ppeInstances = loadStoredData('ppe_instances', defaultPPEInstances);
+export const employees = loadStoredData('employees', defaultEmployees);
+export const ppeMovements = loadStoredData('ppe_movements', defaultPPEMovements);
+
+// Save data to localStorage whenever it changes
+export const updatePPECatalog = (newCatalog: PPEItem[]) => {
+  saveData('ppe_catalog', newCatalog);
+};
+
+export const updatePPEInstances = (newInstances: PPEInstance[]) => {
+  saveData('ppe_instances', newInstances);
+};
+
+export const updateEmployees = (newEmployees: Employee[]) => {
+  saveData('employees', newEmployees);
+};
+
+export const updatePPEMovements = (newMovements: PPEMovement[]) => {
+  saveData('ppe_movements', newMovements);
+};
 
 // Dashboard Statistics
 export const dashboardStats: DashboardStats = {

@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { ppeInstances, ppeCatalog } from '@/data/mockData';
+import { ppeInstances, ppeCatalog, updatePPEInstances } from '@/data/mockData';
 import { DataTable } from '@/components/UI/DataTable';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowUpDown } from 'lucide-react';
@@ -9,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 
 const Inventory = () => {
-  // Combine PPE data with catalog data
   const inventoryData = ppeInstances.map(instance => {
     const catalogItem = ppeCatalog.find(item => item.id === instance.catalogItemId);
     return {
@@ -26,6 +24,13 @@ const Inventory = () => {
     const expiry = new Date(expiryDate);
     const diffTime = expiry.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const handleStatusChange = (instanceId: string, newStatus: 'available' | 'in-use' | 'discarded') => {
+    const updatedInstances = ppeInstances.map(instance => 
+      instance.id === instanceId ? { ...instance, status: newStatus } : instance
+    );
+    updatePPEInstances(updatedInstances);
   };
 
   return (
