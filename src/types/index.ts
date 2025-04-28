@@ -21,6 +21,7 @@ export interface PPEInstance {
   expiryDate: string;
   status: 'available' | 'in-use' | 'discarded';
   maintenanceHistory: MaintenanceRecord[];
+  unitValue?: number; // Value in BRL
 }
 
 // Maintenance records
@@ -84,4 +85,21 @@ export interface Alert {
   severity: 'low' | 'medium' | 'high';
   date: string;
   relatedItemId?: string;
+}
+
+// Report types for monthly data
+export interface MonthlyReport {
+  month: string; // Format: YYYY-MM
+  entriesCount: number;
+  exitsCount: number;
+  discardedCount: number;
+  totalValue: number;
+  itemBreakdown: {
+    [catalogItemId: string]: {
+      entries: number;
+      exits: number;
+      discarded: number;
+      value: number;
+    }
+  }
 }

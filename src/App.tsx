@@ -10,6 +10,7 @@ import Catalog from "./pages/Catalog";
 import Employees from "./pages/Employees";
 import Inventory from "./pages/Inventory";
 import Movements from "./pages/Movements";
+import Reports from "./pages/Reports"; // New import
 import NotFound from "./pages/NotFound";
 import { Navbar } from "./components/Navigation/Navbar";
 import { Sidebar } from "./components/Navigation/Sidebar";
@@ -40,6 +41,7 @@ const App = () => {
                   <Route path="/employees" element={<Employees />} />
                   <Route path="/inventory" element={<Inventory />} />
                   <Route path="/movements" element={<Movements />} />
+                  <Route path="/reports" element={<Reports />} /> {/* New route */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
