@@ -38,9 +38,10 @@ const getSeverityColor = (severity: AlertType['severity']) => {
 interface AlertBannerProps {
   alert: AlertType;
   onDismiss?: (id: string) => void;
+  compact?: boolean;
 }
 
-export function AlertBanner({ alert, onDismiss }: AlertBannerProps) {
+export function AlertBanner({ alert, onDismiss, compact = false }: AlertBannerProps) {
   const { id, type, message, severity, date } = alert;
   
   // Format date to display as "5 Apr, 2024"
@@ -49,6 +50,24 @@ export function AlertBanner({ alert, onDismiss }: AlertBannerProps) {
     month: 'short',
     year: 'numeric'
   });
+
+  if (compact) {
+    return (
+      <div className={cn("flex items-center p-2", getSeverityColor(severity))}>
+        <div className={cn("p-1 rounded-full mr-2", 
+          severity === 'high' ? 'bg-safety-red/20' : 
+          severity === 'medium' ? 'bg-safety-orange/20' : 
+          'bg-safety-blue/20'
+        )}>
+          {getAlertIcon(type)}
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium">{message}</p>
+          <p className="text-xs text-muted-foreground">{formattedDate}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Card className={cn("mb-3 border", getSeverityColor(severity))}>
