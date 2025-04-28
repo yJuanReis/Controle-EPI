@@ -1,292 +1,320 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { FileDown } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { ppeMovements, ppeCatalog, ppeInstances } from '@/data/mockData';
+import { BarChart, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip, Cell, Legend } from 'recharts';
+import { Printer, Download, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { MonthlyReport } from '@/types';
+import { format } from 'date-fns';
+
+// Colors for chart
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+// Get available months (last 12 months)
+const generateMonthOptions = () => {
+  const options = [];
+  const now = new Date();
+  
+  for (let i = 0; i < 12; i++) {
+    const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = format(month, 'yyyy-MM');
+    const label = format(month, 'MMMM yyyy');
+    options.push({ value, label });
+  }
+  
+  return options;
+};
+
+// Mock function to get report data
+const getMonthlyReport = (month: string): MonthlyReport => {
+  // This would be replaced with a real API call
+  const demoData: MonthlyReport = {
+    month,
+    entriesCount: Math.floor(Math.random() * 50) + 10,
+    exitsCount: Math.floor(Math.random() * 40) + 5,
+    discardedCount: Math.floor(Math.random() * 10),
+    totalValue: Math.floor(Math.random() * 5000) + 1000,
+    itemBreakdown: {
+      'luvas': {
+        entries: Math.floor(Math.random() * 20) + 5,
+        exits: Math.floor(Math.random() * 15) + 3,
+        discarded: Math.floor(Math.random() * 5),
+        value: Math.floor(Math.random() * 1000) + 200,
+      },
+      'capacetes': {
+        entries: Math.floor(Math.random() * 10) + 2,
+        exits: Math.floor(Math.random() * 8) + 1,
+        discarded: Math.floor(Math.random() * 3),
+        value: Math.floor(Math.random() * 1500) + 500,
+      },
+      'oculos': {
+        entries: Math.floor(Math.random() * 15) + 3,
+        exits: Math.floor(Math.random() * 12) + 2,
+        discarded: Math.floor(Math.random() * 4),
+        value: Math.floor(Math.random() * 800) + 300,
+      },
+      'protetores': {
+        entries: Math.floor(Math.random() * 8) + 1,
+        exits: Math.floor(Math.random() * 6) + 1,
+        discarded: Math.floor(Math.random() * 2),
+        value: Math.floor(Math.random() * 600) + 100,
+      }
+    }
+  };
+  
+  return demoData;
+};
 
 const Reports = () => {
   const { toast } = useToast();
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState<string>((new Date().getMonth() + 1).toString().padStart(2, '0'));
-  const [monthlyData, setMonthlyData] = useState<any>(null);
+  const monthOptions = generateMonthOptions();
+  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].value);
+  const [reportData, setReportData] = useState<MonthlyReport>(getMonthlyReport(selectedMonth));
+  const [activeTab, setActiveTab] = useState('summary');
   
-  const years = Array.from(new Set(ppeMovements.map(m => new Date(m.date).getFullYear().toString())));
-  const months = [
-    { value: '01', label: 'Janeiro' },
-    { value: '02', label: 'Fevereiro' },
-    { value: '03', label: 'Março' },
-    { value: '04', label: 'Abril' },
-    { value: '05', label: 'Maio' },
-    { value: '06', label: 'Junho' },
-    { value: '07', label: 'Julho' },
-    { value: '08', label: 'Agosto' },
-    { value: '09', label: 'Setembro' },
-    { value: '10', label: 'Outubro' },
-    { value: '11', label: 'Novembro' },
-    { value: '12', label: 'Dezembro' }
-  ];
-
-  useEffect(() => {
-    generateMonthlyData();
-  }, [selectedYear, selectedMonth]);
-
-  const generateMonthlyData = () => {
-    const startDate = new Date(`${selectedYear}-${selectedMonth}-01T00:00:00Z`);
-    const endMonth = parseInt(selectedMonth);
-    const endYear = parseInt(selectedYear) + (endMonth === 12 ? 1 : 0);
-    const endMonthFormatted = endMonth === 12 ? '01' : (endMonth + 1).toString().padStart(2, '0');
-    const endDate = new Date(`${endYear}-${endMonthFormatted}-01T00:00:00Z`);
-    
-    // Filter movements for the selected month
-    const filteredMovements = ppeMovements.filter(movement => {
-      const movementDate = new Date(movement.date);
-      return movementDate >= startDate && movementDate < endDate;
-    });
-    
-    // Initialize item tracking
-    const itemBreakdown = {};
-    ppeCatalog.forEach(item => {
-      itemBreakdown[item.id] = {
-        type: item.type,
-        entries: 0,
-        exits: 0,
-        discarded: 0,
-        value: 0
-      };
-    });
-    
-    // Process movements
-    let entriesCount = 0;
-    let exitsCount = 0;
-    let discardedCount = 0;
-    let totalValue = 0;
-    
-    filteredMovements.forEach(movement => {
-      const instance = ppeInstances.find(i => i.id === movement.ppeInstanceId);
-      if (!instance) return;
-      
-      const catalogItemId = instance.catalogItemId;
-      const itemValue = instance.unitValue || 0;
-      
-      switch (movement.type) {
-        case 'delivery':
-          entriesCount++;
-          itemBreakdown[catalogItemId].entries++;
-          itemBreakdown[catalogItemId].value += itemValue;
-          totalValue += itemValue;
-          break;
-        case 'return':
-          exitsCount++;
-          itemBreakdown[catalogItemId].exits++;
-          break;
-        case 'discard':
-          discardedCount++;
-          itemBreakdown[catalogItemId].discarded++;
-          break;
-        case 'replacement':
-          // Replacement is both an entry and exit
-          entriesCount++;
-          exitsCount++;
-          break;
-      }
-    });
-    
-    setMonthlyData({
-      period: `${months.find(m => m.value === selectedMonth)?.label} ${selectedYear}`,
-      entriesCount,
-      exitsCount,
-      discardedCount,
-      totalValue,
-      itemBreakdown
-    });
+  // Handle month change
+  const handleMonthChange = (month: string) => {
+    setSelectedMonth(month);
+    setReportData(getMonthlyReport(month));
   };
-
-  const handleExportReport = () => {
+  
+  // Chart data for summary
+  const summaryData = [
+    { name: 'Entradas', value: reportData.entriesCount, color: COLORS[0] },
+    { name: 'Saídas', value: reportData.exitsCount, color: COLORS[1] },
+    { name: 'Descartados', value: reportData.discardedCount, color: COLORS[2] },
+  ];
+  
+  // Chart data for item breakdown
+  const itemBreakdownData = Object.entries(reportData.itemBreakdown).map(([key, value]) => {
+    return {
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      entradas: value.entries,
+      saidas: value.exits,
+      descartados: value.discarded,
+    };
+  });
+  
+  // Export data as CSV
+  const exportToCSV = () => {
     try {
-      const dataStr = JSON.stringify(monthlyData, null, 2);
-      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      let csvContent = 'data:text/csv;charset=utf-8,';
       
-      const exportFileDefaultName = `relatorio-epi-${selectedYear}-${selectedMonth}.json`;
-
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileDefaultName);
-      linkElement.click();
+      // Add headers
+      csvContent += 'Item,Entradas,Saídas,Descartados,Valor Total\n';
+      
+      // Add rows for each item
+      Object.entries(reportData.itemBreakdown).forEach(([key, value]) => {
+        csvContent += `${key},${value.entries},${value.exits},${value.discarded},${value.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+      });
+      
+      // Add total row
+      csvContent += `Total,${reportData.entriesCount},${reportData.exitsCount},${reportData.discardedCount},${reportData.totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+      
+      // Create download link
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `relatorio-epi-${reportData.month}.csv`);
+      document.body.appendChild(link);
+      
+      // Trigger download and remove link
+      link.click();
+      document.body.removeChild(link);
       
       toast({
-        title: "Sucesso",
-        description: "Relatório exportado com sucesso.",
+        title: "Relatório exportado",
+        description: `O relatório de ${format(new Date(reportData.month), 'MMMM yyyy')} foi exportado com sucesso.`,
       });
     } catch (error) {
       toast({
-        title: "Erro",
+        variant: "destructive",
+        title: "Erro ao exportar",
         description: "Não foi possível exportar o relatório.",
-        variant: "destructive"
       });
     }
   };
-
+  
+  // Handle print
+  const handlePrint = () => {
+    window.print();
+    toast({
+      title: "Enviado para impressão",
+      description: "O relatório foi enviado para a fila de impressão.",
+    });
+  };
+  
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Relatórios</h1>
-          <p className="text-muted-foreground mt-1">
-            Análise de movimentações e estatísticas de uso de EPIs
-          </p>
-        </div>
-        <Button onClick={handleExportReport}>
-          <FileDown className="mr-2 h-4 w-4" /> Exportar Relatório
-        </Button>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row gap-4 items-end">
-        <div className="w-full sm:w-1/3">
-          <label className="text-sm font-medium">Ano</label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o ano" />
-            </SelectTrigger>
-            <SelectContent>
-              {years.length > 0 ? (
-                years.map(year => (
-                  <SelectItem key={year} value={year}>{year}</SelectItem>
-                ))
-              ) : (
-                <SelectItem value={new Date().getFullYear().toString()}>
-                  {new Date().getFullYear()}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="w-full sm:w-1/3">
-          <label className="text-sm font-medium">Mês</label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o mês" />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map(month => (
-                <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="container mx-auto py-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Relatórios</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" />
+            Imprimir
+          </Button>
+          <Button onClick={exportToCSV}>
+            <Download className="mr-2 h-4 w-4" />
+            Exportar CSV
+          </Button>
         </div>
       </div>
       
-      {monthlyData && (
-        <Tabs defaultValue="summary" className="w-full">
-          <TabsList>
-            <TabsTrigger value="summary">Resumo</TabsTrigger>
-            <TabsTrigger value="items">Itens</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="summary">
-            <div className="grid gap-4 md:grid-cols-3 mt-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Entrada de EPIs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{monthlyData.entriesCount}</div>
-                  <p className="text-muted-foreground">itens adicionados ao estoque</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Saída de EPIs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{monthlyData.exitsCount}</div>
-                  <p className="text-muted-foreground">itens distribuídos a colaboradores</p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">EPIs Descartados</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{monthlyData.discardedCount}</div>
-                  <p className="text-muted-foreground">itens descartados ou danificados</p>
-                </CardContent>
-              </Card>
+      <div className="grid gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Relatório Mensal de EPIs</CardTitle>
+            <CardDescription>
+              Visualize entradas, saídas e descarte de EPIs
+            </CardDescription>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="month">Mês do relatório</Label>
+                <Select value={selectedMonth} onValueChange={handleMonthChange}>
+                  <SelectTrigger id="month">
+                    <SelectValue placeholder="Selecione o mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            
-            {monthlyData.totalValue > 0 && (
-              <Card className="mt-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Valor Total</CardTitle>
-                  <CardDescription>
-                    Valor dos EPIs adquiridos no período
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-safety-blue">
-                    R$ {monthlyData.totalValue.toFixed(2).replace('.', ',')}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="items">
-            <Card className="mt-4">
-              <CardHeader className="pb-2">
-                <CardTitle>Movimentação por Tipo de EPI</CardTitle>
-                <CardDescription>
-                  Detalhamento por item no período {monthlyData.period}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Entradas</TableHead>
-                      <TableHead>Saídas</TableHead>
-                      <TableHead>Descartados</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(monthlyData.itemBreakdown)
-                      .filter(([_, data]) => data.entries > 0 || data.exits > 0 || data.discarded > 0)
-                      .map(([itemId, data]) => (
-                        <TableRow key={itemId}>
-                          <TableCell>{data.type}</TableCell>
-                          <TableCell>
-                            <Badge className="bg-safety-green">
-                              {data.entries}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="bg-safety-blue">
-                              {data.exits}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="bg-safety-red">
-                              {data.discarded}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      )}
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full md:w-auto">
+                <TabsTrigger value="summary">Resumo</TabsTrigger>
+                <TabsTrigger value="breakdown">Detalhamento por Tipo</TabsTrigger>
+              </TabsList>
+              
+              {/* Summary Tab */}
+              <TabsContent value="summary" className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  <Card>
+                    <CardHeader className="pb-1 pt-4">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Entradas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{reportData.entriesCount}</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-1 pt-4">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Saídas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{reportData.exitsCount}</div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader className="pb-1 pt-4">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Descartados
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{reportData.discardedCount}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Visão Geral</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={summaryData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <XAxis dataKey="name" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip formatter={(value) => [`${value} unidades`, '']} />
+                        <Bar dataKey="value" name="Quantidade" background={{ fill: '#f3f4f6' }}>
+                          {summaryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              {/* Breakdown Tab */}
+              <TabsContent value="breakdown" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Detalhamento por Tipo de EPI</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={itemBreakdownData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <XAxis dataKey="name" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="entradas" name="Entradas" fill={COLORS[0]} />
+                        <Bar dataKey="saidas" name="Saídas" fill={COLORS[1]} />
+                        <Bar dataKey="descartados" name="Descartados" fill={COLORS[2]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Tabela Detalhada</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4">Tipo de EPI</th>
+                            <th className="text-left py-3 px-4">Entradas</th>
+                            <th className="text-left py-3 px-4">Saídas</th>
+                            <th className="text-left py-3 px-4">Descartados</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(reportData.itemBreakdown).map(([key, item]) => (
+                            <tr key={key} className="border-b hover:bg-muted/50">
+                              <td className="py-3 px-4 capitalize">{key}</td>
+                              <td className="py-3 px-4">{item.entries}</td>
+                              <td className="py-3 px-4">{item.exits}</td>
+                              <td className="py-3 px-4">{item.discarded}</td>
+                            </tr>
+                          ))}
+                          <tr className="font-medium">
+                            <td className="py-3 px-4">Total</td>
+                            <td className="py-3 px-4">{reportData.entriesCount}</td>
+                            <td className="py-3 px-4">{reportData.exitsCount}</td>
+                            <td className="py-3 px-4">{reportData.discardedCount}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -10,7 +10,8 @@ import {
   RefreshCw, 
   ChevronLeft, 
   Clipboard, 
-  Settings 
+  Settings,
+  Anchor 
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -77,9 +78,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex h-16 items-center justify-between border-b px-4">
           <div className="flex items-center">
             <div className="h-8 w-8 rounded bg-safety-blue text-white flex items-center justify-center mr-2">
-              <span className="font-bold">P</span>
+              <Anchor size={18} />
             </div>
-            <span className="text-lg font-bold">ProtecSureFlow</span>
+            <span className="text-lg font-bold">Controle de EPI</span>
           </div>
           <button 
             onClick={onClose}
