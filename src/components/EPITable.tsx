@@ -1,24 +1,36 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Plus, Search, FilterX } from 'lucide-react';
 
 const EPITable = () => {
+  const navigate = useNavigate();
+  
+  const handleNovoEPI = () => {
+    navigate('/estoque');
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
         <div className="text-2xl font-bold text-gray-800">Dashboard de EPIs</div>
 
-        <div className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg shadow transition-all transform hover:scale-105 flex items-center cursor-pointer">
-          <span className="material-symbols-outlined mr-1">add</span>
+        <Button 
+          onClick={handleNovoEPI}
+          className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg shadow transition-all flex items-center gap-2"
+        >
+          <Plus size={18} />
           Novo EPI
-        </div>
+        </Button>
       </div>
 
       <div className="mb-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="relative flex-grow">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-              <span className="material-symbols-outlined">search</span>
-            </span>
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <Search size={18} />
+            </div>
             <input
               type="text"
               placeholder="Buscar EPIs por nome, CA, fornecedor..."
@@ -32,9 +44,9 @@ const EPITable = () => {
               <option>Próximos ao Vencimento</option>
               <option>Vencidos</option>
             </select>
-            <button className="rounded-full h-10 w-10 bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-              <span className="material-symbols-outlined">filter_list</span>
-            </button>
+            <Button variant="ghost" size="icon" className="rounded-full h-10 w-10">
+              <FilterX size={18} />
+            </Button>
           </div>
         </div>
       </div>
