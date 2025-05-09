@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 
 const Login = () => {
   const { signInWithGoogle, user } = useAuth();
@@ -43,7 +43,7 @@ const Login = () => {
               className="w-full flex items-center justify-center py-6"
               size="lg"
             >
-              <Mail className="mr-2" />
+              <LogIn className="mr-2" />
               Entrar com Google
             </Button>
             
