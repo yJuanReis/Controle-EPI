@@ -1,14 +1,28 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Plus, Search, FilterX } from 'lucide-react';
+import { Plus, Search, FilterX, Edit, Trash } from 'lucide-react';
 
 const EPITable = () => {
   const navigate = useNavigate();
   
   const handleNovoEPI = () => {
     navigate('/estoque');
+  };
+
+  const handleEditEPI = (id: string) => {
+    // Navigate to edit page with the EPI id
+    navigate(`/estoque?edit=${id}`);
+  };
+
+  const handleDeleteEPI = (id: string) => {
+    // In a real implementation, this would call an API to delete the EPI
+    console.log('Deleting EPI:', id);
+    // Show confirmation dialog or directly delete
+    if (window.confirm('Tem certeza que deseja excluir este EPI?')) {
+      // Delete logic would go here
+      console.log('Confirmed deletion of EPI:', id);
+    }
   };
 
   return (
@@ -102,16 +116,22 @@ const EPITable = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end space-x-2">
-                  <button className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-blue-600">
-                      edit
-                    </span>
-                  </button>
-                  <button className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-red-600">
-                      delete
-                    </span>
-                  </button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleEditEPI('12345')} 
+                    className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleDeleteEPI('12345')}
+                    className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
+                  >
+                    <Trash className="h-4 w-4 text-red-600" />
+                  </Button>
                 </div>
               </td>
             </tr>
@@ -145,16 +165,22 @@ const EPITable = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end space-x-2">
-                  <button className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-blue-600">
-                      edit
-                    </span>
-                  </button>
-                  <button className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-red-600">
-                      delete
-                    </span>
-                  </button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleEditEPI('23456')} 
+                    className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleDeleteEPI('23456')}
+                    className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
+                  >
+                    <Trash className="h-4 w-4 text-red-600" />
+                  </Button>
                 </div>
               </td>
             </tr>
@@ -188,16 +214,22 @@ const EPITable = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end space-x-2">
-                  <button className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-blue-600">
-                      edit
-                    </span>
-                  </button>
-                  <button className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-red-600">
-                      delete
-                    </span>
-                  </button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleEditEPI('34567')} 
+                    className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleDeleteEPI('34567')}
+                    className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
+                  >
+                    <Trash className="h-4 w-4 text-red-600" />
+                  </Button>
                 </div>
               </td>
             </tr>
@@ -231,16 +263,22 @@ const EPITable = () => {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end space-x-2">
-                  <button className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-blue-600">
-                      edit
-                    </span>
-                  </button>
-                  <button className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors">
-                    <span className="material-symbols-outlined text-red-600">
-                      delete
-                    </span>
-                  </button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleEditEPI('45678')} 
+                    className="rounded-full h-8 w-8 bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                  >
+                    <Edit className="h-4 w-4 text-blue-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleDeleteEPI('45678')}
+                    className="rounded-full h-8 w-8 bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
+                  >
+                    <Trash className="h-4 w-4 text-red-600" />
+                  </Button>
                 </div>
               </td>
             </tr>
@@ -251,21 +289,36 @@ const EPITable = () => {
       <div className="mt-6 flex justify-between items-center">
         <p className="text-sm text-gray-500">Mostrando 4 de 24 EPIs</p>
         <div className="flex space-x-2">
-          <button className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors">
+          <Button 
+            variant="outline" 
+            className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
             Anterior
-          </button>
-          <button className="px-3 py-1 rounded-md bg-primary-50 text-primary-600 font-medium border border-primary-200">
+          </Button>
+          <Button 
+            variant="outline"
+            className="px-3 py-1 rounded-md bg-primary-50 text-primary-600 font-medium border border-primary-200"
+          >
             1
-          </button>
-          <button className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors">
+          </Button>
+          <Button 
+            variant="outline"
+            className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
             2
-          </button>
-          <button className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors">
+          </Button>
+          <Button 
+            variant="outline"
+            className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
             3
-          </button>
-          <button className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors">
+          </Button>
+          <Button 
+            variant="outline"
+            className="px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
             Próximo
-          </button>
+          </Button>
         </div>
       </div>
     </div>

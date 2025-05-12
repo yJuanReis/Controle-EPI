@@ -7,6 +7,26 @@ import { ChevronRight, FileText, Users, RefreshCw, Package } from 'lucide-react'
 const QuickActionsCard = () => {
   const navigate = useNavigate();
   
+  const handleRelatorioBtnClick = () => {
+    navigate('/relatorios');
+    console.log('Navegando para relatórios de entregas');
+  };
+
+  const handleAtribuirEPIBtnClick = () => {
+    navigate('/colaboradores?action=atribuir');
+    console.log('Navegando para atribuir EPI');
+  };
+
+  const handleCadastrarColaboradorBtnClick = () => {
+    navigate('/colaboradores?action=cadastrar');
+    console.log('Navegando para cadastrar colaborador');
+  };
+
+  const handleGerenciarEstoqueBtnClick = () => {
+    navigate('/estoque');
+    console.log('Navegando para gerenciar estoque');
+  };
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-lg font-semibold mb-4 text-gray-800">Ações Rápidas</h3>
@@ -14,7 +34,7 @@ const QuickActionsCard = () => {
         <Button 
           variant="outline"
           className="w-full py-2 px-4 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 flex items-center justify-between transition-colors"
-          onClick={() => navigate('/')}
+          onClick={handleRelatorioBtnClick}
         >
           <span className="flex items-center">
             <FileText className="mr-2" size={18} />
@@ -26,7 +46,7 @@ const QuickActionsCard = () => {
         <Button 
           variant="outline"
           className="w-full py-2 px-4 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 flex items-center justify-between transition-colors"
-          onClick={() => navigate('/')}
+          onClick={handleAtribuirEPIBtnClick}
         >
           <span className="flex items-center">
             <RefreshCw className="mr-2" size={18} />
@@ -38,7 +58,7 @@ const QuickActionsCard = () => {
         <Button 
           variant="outline"
           className="w-full py-2 px-4 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 flex items-center justify-between transition-colors"
-          onClick={() => navigate('/colaboradores')}
+          onClick={handleCadastrarColaboradorBtnClick}
         >
           <span className="flex items-center">
             <Users className="mr-2" size={18} />
@@ -50,7 +70,7 @@ const QuickActionsCard = () => {
         <Button 
           variant="outline"
           className="w-full py-2 px-4 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 flex items-center justify-between transition-colors"
-          onClick={() => navigate('/estoque')}
+          onClick={handleGerenciarEstoqueBtnClick}
         >
           <span className="flex items-center">
             <Package className="mr-2" size={18} />
