@@ -2,6 +2,9 @@
 import React from 'react';
 
 const StatusCard = () => {
+  // This would typically come from an API call in a real application
+  const currentDate = new Date().toLocaleDateString('pt-BR');
+  
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <h3 className="text-lg font-semibold mb-4 text-gray-800">Status dos EPIs</h3>
@@ -36,7 +39,7 @@ const StatusCard = () => {
         </div>
       </div>
       <div className="mt-4 pt-4 border-t">
-        <p className="text-sm text-gray-500">Atualizado em: 10/02/2023</p>
+        <p className="text-sm text-gray-500">Atualizado em: {currentDate}</p>
       </div>
     </div>
   );

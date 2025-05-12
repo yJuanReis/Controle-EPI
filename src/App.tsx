@@ -10,6 +10,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Estoque from "./pages/Estoque";
 import Colaboradores from "./pages/Colaboradores";
+import Relatorios from "./pages/Relatorios";
+import EntregasDevolucoes from "./pages/EntregasDevoluções";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import UserManagement from "./pages/UserManagement";
@@ -43,6 +45,18 @@ const App = () => (
             <Route path="/colaboradores" element={
               <ProtectedRoute>
                 <Colaboradores />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/relatorios" element={
+              <ProtectedRoute>
+                <Relatorios />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/entregas-devolucoes" element={
+              <ProtectedRoute>
+                <EntregasDevolucoes />
               </ProtectedRoute>
             } />
             

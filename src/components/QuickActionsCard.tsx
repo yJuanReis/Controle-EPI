@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, FileText, Users, RefreshCw, Package } from 'lucide-react';
+import { ChevronRight, FileText, Users, ArrowDownUp, Package } from 'lucide-react';
 
 const QuickActionsCard = () => {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const QuickActionsCard = () => {
   };
 
   const handleAtribuirEPIBtnClick = () => {
-    navigate('/colaboradores?action=atribuir');
+    navigate('/entregas-devolucoes');
     console.log('Navegando para atribuir EPI');
   };
 
@@ -49,7 +49,7 @@ const QuickActionsCard = () => {
           onClick={handleAtribuirEPIBtnClick}
         >
           <span className="flex items-center">
-            <RefreshCw className="mr-2" size={18} />
+            <ArrowDownUp className="mr-2" size={18} />
             Atribuir EPI a Colaborador
           </span>
           <ChevronRight size={18} />
