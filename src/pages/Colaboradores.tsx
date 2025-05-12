@@ -8,6 +8,8 @@ import { Input } from '../components/ui/input';
 import { UserPlus, Pencil } from 'lucide-react';
 import AdicionarColaboradorModal from '../components/AdicionarColaboradorModal';
 import EditarColaboradorModal from '../components/EditarColaboradorModal';
+import { useToast } from '@/hooks/use-toast';
+import { useEPI } from '../contexts/EPIContext';
 
 interface Colaborador {
   id: number;
@@ -20,6 +22,9 @@ interface Colaborador {
 }
 
 const Colaboradores = () => {
+  const { toast } = useToast();
+  const { epis, setEpis } = useEPI();
+  
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([
     {
       id: 1,
@@ -64,18 +69,65 @@ const Colaboradores = () => {
   const [colaboradorParaEditar, setColaboradorParaEditar] = useState<Colaborador | null>(null);
   const [termoBusca, setTermoBusca] = useState('');
 
+  // Função para verificar e atualizar o estoque ao adicionar ou editar colaboradores
+  const atualizarEstoqueEPI = (epiNome: string, incremento: boolean) => {
+    setEpis(currentEpis => {
+      return currentEpis.map(epi => {
+        if (epi.nome === epiNome) {
+          // Incrementa ou decrementa a quantidade
+          const novaQuantidade = incremento ? epi.quantidade + 1 : epi.quantidade - 1;
+          // Não permitir que a quantidade fique negativa
+          return { ...epi, quantidade: Math.max(0, novaQuantidade) };
+        }
+        return epi;
+      });
+    });
+  };
+
   const adicionarColaborador = (novoColaborador: Omit<Colaborador, 'id'>) => {
     const novoId = Math.max(0, ...colaboradores.map(c => c.id)) + 1;
+    
+    // Atualizar o estoque para cada EPI selecionado
+    novoColaborador.epi.forEach(epiNome => {
+      atualizarEstoqueEPI(epiNome, false); // false = decrementar
+    });
+    
     setColaboradores([...colaboradores, { ...novoColaborador, id: novoId }]);
     setModalAdicionarAberto(false);
+    
+    toast({
+      title: "Colaborador adicionado",
+      description: `${novoColaborador.nome} foi adicionado com sucesso.`,
+    });
   };
 
   const editarColaborador = (colaboradorEditado: Colaborador) => {
+    // Encontrar colaborador antigo para comparar EPIs
+    const colaboradorAntigo = colaboradores.find(c => c.id === colaboradorEditado.id);
+    
+    if (colaboradorAntigo) {
+      // EPIs removidos (devolver ao estoque)
+      colaboradorAntigo.epi
+        .filter(epi => !colaboradorEditado.epi.includes(epi))
+        .forEach(epi => atualizarEstoqueEPI(epi, true));
+      
+      // EPIs adicionados (tirar do estoque)
+      colaboradorEditado.epi
+        .filter(epi => !colaboradorAntigo.epi.includes(epi))
+        .forEach(epi => atualizarEstoqueEPI(epi, false));
+    }
+    
     setColaboradores(colaboradores.map(c => 
       c.id === colaboradorEditado.id ? colaboradorEditado : c
     ));
+    
     setModalEditarAberto(false);
     setColaboradorParaEditar(null);
+    
+    toast({
+      title: "Colaborador atualizado",
+      description: `${colaboradorEditado.nome} foi atualizado com sucesso.`,
+    });
   };
 
   const abrirModalEditar = (colaborador: Colaborador) => {
@@ -149,14 +201,28 @@ const Colaboradores = () => {
                   <TableCell>{colaborador.dataAdmissao}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {colaborador.epi.map((e, i) => (
-                        <span 
-                          key={i}
-                          className="inline-block bg-primary-50 text-primary-700 text-xs px-2 py-1 rounded-full"
-                        >
-                          {e}
-                        </span>
-                      ))}
+                      {colaborador.epi.map((e, i) => {
+                        // Verificar se o EPI existe e seu estado
+                        const epiInfo = epis.find(epi => epi.nome === e);
+                        const epiStatus = epiInfo?.status || "Ativo";
+                        let statusClass = "bg-primary-50 text-primary-700";
+                        
+                        if (epiStatus === "Próximo ao vencimento") {
+                          statusClass = "bg-amber-100 text-amber-800";
+                        } else if (epiStatus === "Vencido") {
+                          statusClass = "bg-red-100 text-red-800";
+                        }
+                        
+                        return (
+                          <span 
+                            key={i}
+                            className={`inline-block text-xs px-2 py-1 rounded-full ${statusClass}`}
+                            title={epiStatus}
+                          >
+                            {e}
+                          </span>
+                        );
+                      })}
                     </div>
                   </TableCell>
                   <TableCell>

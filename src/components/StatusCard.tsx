@@ -1,9 +1,20 @@
 
 import React from 'react';
+import { useEPI } from '../contexts/EPIContext';
 
 const StatusCard = () => {
-  // This would typically come from an API call in a real application
+  const { epis } = useEPI();
+  
+  // Get current date in pt-BR format
   const currentDate = new Date().toLocaleDateString('pt-BR');
+  
+  // Calculate counts for each status
+  const ativos = epis.filter(epi => epi.status === 'Ativo').length;
+  const proximosVencimento = epis.filter(epi => epi.status === 'Próximo ao vencimento').length;
+  const vencidos = epis.filter(epi => epi.status === 'Vencido').length;
+  
+  // Count low stock items (less than 10)
+  const baixoEstoque = epis.filter(epi => epi.quantidade < 10).length;
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -14,28 +25,28 @@ const StatusCard = () => {
             <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
             <span className="text-sm">Ativos</span>
           </div>
-          <span className="font-semibold">18</span>
+          <span className="font-semibold">{ativos}</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
             <span className="text-sm">Baixo Estoque</span>
           </div>
-          <span className="font-semibold">3</span>
+          <span className="font-semibold">{baixoEstoque}</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
             <span className="text-sm">Próximos ao Vencimento</span>
           </div>
-          <span className="font-semibold">2</span>
+          <span className="font-semibold">{proximosVencimento}</span>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
             <span className="text-sm">Vencidos</span>
           </div>
-          <span className="font-semibold">1</span>
+          <span className="font-semibold">{vencidos}</span>
         </div>
       </div>
       <div className="mt-4 pt-4 border-t">

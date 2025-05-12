@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
 import { Button } from '../components/ui/button';
@@ -8,82 +8,33 @@ import { Package, Pencil } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import AdicionarEstoqueModal from '../components/AdicionarEstoqueModal';
 import EditarEstoqueModal from '../components/EditarEstoqueModal';
-
-interface ItemEstoque {
-  id: number;
-  nome: string;
-  tipo: string;
-  ca: string;
-  quantidade: number;
-  fornecedor: string;
-  validade: string;
-}
+import { useEPI, EPI } from '../contexts/EPIContext';
 
 const Estoque = () => {
-  const [itensEstoque, setItensEstoque] = useState<ItemEstoque[]>([
-    { 
-      id: 1, 
-      nome: 'Capacete de Segurança', 
-      tipo: 'Tipo II, Classe B', 
-      ca: '12345', 
-      quantidade: 25, 
-      fornecedor: '3M Brasil',
-      validade: '15/12/2023'
-    },
-    { 
-      id: 2, 
-      nome: 'Luvas de Proteção', 
-      tipo: 'Resistente a cortes', 
-      ca: '23456', 
-      quantidade: 50, 
-      fornecedor: 'Ansell Healthcare',
-      validade: '20/06/2024'
-    },
-    { 
-      id: 3, 
-      nome: 'Óculos de Proteção', 
-      tipo: 'Lente incolor, UV', 
-      ca: '34567', 
-      quantidade: 30, 
-      fornecedor: 'MSA Safety',
-      validade: '10/03/2023'
-    },
-    { 
-      id: 4, 
-      nome: 'Respirador Semi-facial', 
-      tipo: 'PFF2 / N95', 
-      ca: '45678', 
-      quantidade: 100, 
-      fornecedor: '3M Brasil',
-      validade: '05/09/2024'
-    }
-  ]);
+  const { epis, setEpis, addEPI, updateEPI } = useEPI();
   
   const [modalAdicionarAberto, setModalAdicionarAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
-  const [itemParaEditar, setItemParaEditar] = useState<ItemEstoque | null>(null);
+  const [itemParaEditar, setItemParaEditar] = useState<EPI | null>(null);
   const [termoBusca, setTermoBusca] = useState('');
 
-  const adicionarItem = (novoItem: Omit<ItemEstoque, 'id'>) => {
-    const novoId = Math.max(0, ...itensEstoque.map(item => item.id)) + 1;
-    setItensEstoque([...itensEstoque, { ...novoItem, id: novoId }]);
+  const adicionarItem = (novoItem: Omit<EPI, 'id'>) => {
+    addEPI(novoItem);
     setModalAdicionarAberto(false);
   };
 
-  const editarItem = (itemEditado: ItemEstoque) => {
-    setItensEstoque(itensEstoque.map(item => 
-      item.id === itemEditado.id ? itemEditado : item
-    ));
+  const editarItem = (itemEditado: EPI) => {
+    updateEPI(itemEditado);
     setModalEditarAberto(false);
     setItemParaEditar(null);
   };
 
-  const abrirModalEditar = (item: ItemEstoque) => {
+  const abrirModalEditar = (item: EPI) => {
     setItemParaEditar(item);
     setModalEditarAberto(true);
   };
 
-  const itensFiltrados = itensEstoque.filter(item => 
+  const itensFiltrados = epis.filter(item => 
     item.nome.toLowerCase().includes(termoBusca.toLowerCase()) || 
     item.ca.includes(termoBusca) ||
     item.fornecedor.toLowerCase().includes(termoBusca.toLowerCase())

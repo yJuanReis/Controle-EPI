@@ -10,15 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from '@/components/ui/date-picker';
 import { X } from 'lucide-react';
-
-interface EPI {
-  id: number;
-  nome: string;
-  ca: string;
-  validade: string;
-  fornecedor: string;
-  status: string;
-}
+import { useEPI } from '../contexts/EPIContext';
 
 interface Colaborador {
   id: number;
@@ -37,15 +29,9 @@ interface EditarColaboradorModalProps {
   colaborador: Colaborador;
 }
 
-// Simulação de EPIs disponíveis no sistema
-const episDisponiveis: EPI[] = [
-  { id: 1, nome: "Capacete de Segurança", ca: "12345", validade: "15/12/2023", fornecedor: "3M Brasil", status: "Próximo ao vencimento" },
-  { id: 2, nome: "Luvas de Proteção", ca: "23456", validade: "20/06/2024", fornecedor: "Ansell Healthcare", status: "Ativo" },
-  { id: 3, nome: "Óculos de Proteção", ca: "34567", validade: "10/03/2023", fornecedor: "MSA Safety", status: "Vencido" },
-  { id: 4, nome: "Respirador Semi-facial", ca: "45678", validade: "05/09/2024", fornecedor: "3M Brasil", status: "Ativo" },
-];
-
 const EditarColaboradorModal = ({ isOpen, onClose, onSalvar, colaborador }: EditarColaboradorModalProps) => {
+  const { epis } = useEPI();
+  
   // Converte a string dataAdmissao para um objeto Date
   const parseDateString = (dateStr: string): Date | undefined => {
     const parts = dateStr.split('/');
@@ -101,6 +87,11 @@ const EditarColaboradorModal = ({ isOpen, onClose, onSalvar, colaborador }: Edit
   useEffect(() => {
     setValue('epi', selectedEPIs);
   }, [selectedEPIs, setValue]);
+
+  // Filtra EPIs disponíveis (quantidade > 0 ou já selecionado pelo colaborador)
+  const episDisponiveis = epis.filter(epi => 
+    epi.quantidade > 0 || selectedEPIs.includes(epi.nome)
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -186,10 +177,14 @@ const EditarColaboradorModal = ({ isOpen, onClose, onSalvar, colaborador }: Edit
                           htmlFor={`epi-${epi.id}`}
                           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                          {epi.nome} - CA: {epi.ca}
+                          {epi.nome} - CA: {epi.ca} {epi.quantidade < 10 && 
+                            <span className="text-amber-500">(Baixo estoque: {epi.quantidade})</span>}
                         </label>
                       </div>
                     ))}
+                    {episDisponiveis.length === 0 && (
+                      <div className="text-red-500 text-sm">Não há EPIs disponíveis no estoque.</div>
+                    )}
                   </div>
                 </div>
                 <div>
