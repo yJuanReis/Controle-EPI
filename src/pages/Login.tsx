@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,9 +8,10 @@ import { LogIn } from 'lucide-react';
 const Login = () => {
   const { signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   // Se o usuário já estiver autenticado, redireciona para o dashboard
-  React.useEffect(() => {
+  useEffect(() => {
     if (user) {
       navigate('/');
     }
@@ -38,6 +39,8 @@ const Login = () => {
           <h2 className="text-center text-xl font-medium mb-6">Entre com sua conta</h2>
           
           <div className="space-y-4">
+            <div id="googleLoginButton"></div>
+            
             <Button 
               onClick={handleGoogleLogin} 
               className="w-full flex items-center justify-center py-6"
@@ -60,3 +63,4 @@ const Login = () => {
 };
 
 export default Login;
+

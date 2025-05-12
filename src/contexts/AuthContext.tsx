@@ -63,34 +63,101 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     };
 
-    checkSession();
+    // Carrega o SDK do Google
+    const loadGoogleScript = () => {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+      
+      script.onload = () => {
+        // Verifica se já existe um token de usuário no localStorage
+        checkSession();
+      };
+    };
+    
+    loadGoogleScript();
   }, []);
 
-  // Função para login com Google (simulação)
+  // Função para login com Google
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      // Simula uma chamada de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simula um login com Google
-      // No mundo real, isso seria substituído pela integração real com o Google
-      const mockUser: User = {
-        id: '3',
-        name: 'Usuário Google',
-        email: 'usuario.google@gmail.com',
-        photoURL: 'https://via.placeholder.com/150',
-        role: 'user',
-      };
-      
-      localStorage.setItem('safetytrack_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      toast.success('Login realizado com sucesso!');
+      return new Promise<void>((resolve, reject) => {
+        if (!window.google) {
+          toast.error('SDK do Google não carregado. Tente novamente.');
+          setLoading(false);
+          reject(new Error('SDK do Google não carregado'));
+          return;
+        }
+
+        // ID de cliente do OAuth 2.0
+        // Normalmente, você precisa registrar seu aplicativo no Google Cloud Console
+        // e obter um ID de cliente. Este é um ID de exemplo.
+        const clientId = '123456789012-abc123def456ghi789jkl012mno345pq.apps.googleusercontent.com';
+
+        const handleCredentialResponse = (response: any) => {
+          // Decodificar o token JWT
+          const decodedToken = decodeJwtResponse(response.credential);
+          
+          // Criar usuário com informações do Google
+          const googleUser: User = {
+            id: decodedToken.sub,
+            name: decodedToken.name,
+            email: decodedToken.email,
+            photoURL: decodedToken.picture,
+            role: 'user', // Por padrão, novos usuários são 'user'
+          };
+
+          // Salvar no localStorage
+          localStorage.setItem('safetytrack_user', JSON.stringify(googleUser));
+          setUser(googleUser);
+          toast.success('Login realizado com sucesso!');
+          setLoading(false);
+          resolve();
+        };
+
+        // Função para decodificar JWT
+        function decodeJwtResponse(token: string) {
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          return JSON.parse(jsonPayload);
+        }
+
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: handleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+          
+          window.google.accounts.id.renderButton(
+            document.getElementById('googleLoginButton') as HTMLElement,
+            { theme: 'outline', size: 'large', width: '100%' }
+          );
+          
+          window.google.accounts.id.prompt();
+          setLoading(false);
+        } catch (error) {
+          console.error('Erro ao inicializar Google Sign-In:', error);
+          toast.error('Falha ao inicializar login com Google.');
+          setLoading(false);
+          reject(error);
+        }
+      });
     } catch (error) {
       console.error('Erro ao fazer login com Google:', error);
       toast.error('Erro ao fazer login com Google.');
-    } finally {
       setLoading(false);
+      throw error;
     }
   };
 
@@ -134,3 +201,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+// Adicionar a interface do Google ao Window
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, options: any) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
