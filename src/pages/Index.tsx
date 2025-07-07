@@ -32,7 +32,7 @@ import { format, subMonths, getMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MovementType } from '@/types';
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 const MOVEMENT_COLORS = {
