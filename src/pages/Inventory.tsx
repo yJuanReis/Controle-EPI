@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ppeInstances, ppeCatalog, updatePPEInstances } from '@/data/mockData';
+import { ppeInstances, updatePPEInstances } from '@/data/mockData';
+import { useCatalog } from '@/hooks/useCatalog';
 import { DataTable } from '@/components/UI/DataTable';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowUpDown } from 'lucide-react';
@@ -14,6 +15,7 @@ import { AssignDialog } from '@/components/Inventory/AssignDialog';
 
 const Inventory = () => {
   const { toast } = useToast();
+  const { catalogItems } = useCatalog();
   const [localInstances, setLocalInstances] = useState(ppeInstances);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -90,7 +92,7 @@ const Inventory = () => {
   };
 
   const inventoryData = localInstances.map(instance => {
-    const catalogItem = ppeCatalog.find(item => item.id === instance.catalogItemId);
+    const catalogItem = catalogItems.find(item => item.id === instance.catalogItemId);
     return {
       ...instance,
       type: catalogItem?.type || 'Desconhecido',
@@ -126,7 +128,7 @@ const Inventory = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {ppeCatalog.slice(0, 4).map((item) => (
+        {catalogItems.slice(0, 4).map((item) => (
           <Card key={item.id}>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{item.type}</CardTitle>

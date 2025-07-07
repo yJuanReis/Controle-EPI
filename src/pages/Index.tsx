@@ -11,7 +11,8 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { StatsCard } from '@/components/Dashboard/StatsCard';
-import { dashboardStats, ppeCatalog, employees, ppeMovements } from '@/data/mockData';
+import { dashboardStats, employees, ppeMovements } from '@/data/mockData';
+import { useCatalog } from '@/hooks/useCatalog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/UI/DataTable';
 import { 
@@ -50,6 +51,7 @@ const MOVEMENT_LABELS = {
 };
 
 const Index = () => {
+  const { getLowStockItems } = useCatalog();
   const [timeFrame, setTimeFrame] = useState('3months');
   const [selectedMovementType, setSelectedMovementType] = useState<string | null>(null);
 
@@ -364,7 +366,7 @@ const Index = () => {
           </CardHeader>
           <CardContent>
             <DataTable
-              data={ppeCatalog.filter(item => item.currentStock < item.minimumStock)}
+              data={getLowStockItems()}
               columns={[
                 { key: 'type', header: 'Tipo' },
                 { key: 'currentStock', header: 'Estoque Atual' },
