@@ -6,8 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { employees, ppeInstances, ppeCatalog, ppeMovements, updatePPEInstances, updatePPEMovements, updateEmployees } from '@/data/mockData';
-import { PPEInstance, PPEMovement } from '@/types';
+import { useEmployees } from '@/hooks/useEmployees';
+import { useCatalog } from '@/hooks/useCatalog';
+import { useInventory } from '@/hooks/useInventory';
 
 interface AssignDialogProps {
   isOpen: boolean;
@@ -17,24 +18,27 @@ interface AssignDialogProps {
 
 export const AssignDialog: React.FC<AssignDialogProps> = ({ isOpen, onClose, itemId }) => {
   const { toast } = useToast();
+  const { employees } = useEmployees();
+  const { catalogItems } = useCatalog();
+  const { instances, assignPPEToEmployee } = useInventory();
   const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [itemDetails, setItemDetails] = useState<{type: string} | null>(null);
   
   useEffect(() => {
     // Find item details when dialog opens or itemId changes
-    const instance = ppeInstances.find(item => item.id === itemId);
+    const instance = instances.find(item => item.id === itemId);
     if (instance) {
-      const catalogItem = ppeCatalog.find(item => item.id === instance.catalogItemId);
+      const catalogItem = catalogItems.find(item => item.id === instance.catalogItemId);
       if (catalogItem) {
         setItemDetails({
           type: catalogItem.type
         });
       }
     }
-  }, [itemId, isOpen]);
+  }, [itemId, isOpen, instances, catalogItems]);
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     if (!selectedEmployee) {
       toast({
         title: "Erro",
@@ -44,49 +48,42 @@ export const AssignDialog: React.FC<AssignDialogProps> = ({ isOpen, onClose, ite
       return;
     }
 
-    try {
-      // 1. Update the PPE instance status
-      const updatedInstances = ppeInstances.map(instance => 
-        instance.id === itemId
-          ? { ...instance, status: 'in-use' as const }
-          : instance
-      );
-      
-      // 2. Create a movement record
-      const newMovement: PPEMovement = {
-        id: `mov-${Date.now()}`,
-        type: 'delivery',
-        date: new Date().toISOString(),
-        employeeId: selectedEmployee,
-        ppeInstanceId: itemId,
-        reason: reason || 'Entrega padrão',
-        authorizedBy: 'Admin do Sistema', // This could be dynamically set based on logged user
-        digitalSignature: `sig-${Date.now()}`
-      };
-      
-      // 3. Update the employee's assigned PPE list
-      const updatedEmployees = employees.map(emp => 
-        emp.id === selectedEmployee
-          ? { ...emp, assignedPPE: [...emp.assignedPPE, itemId] }
-          : emp
-      );
-      
-      // 4. Save all the updates
-      const instancesSuccess = updatePPEInstances(updatedInstances);
-      const movementSuccess = updatePPEMovements([...ppeMovements, newMovement]);
-      const employeesSuccess = updateEmployees(updatedEmployees);
-      
-      if (instancesSuccess && movementSuccess && employeesSuccess) {
-        toast({
-          title: "Sucesso",
-          description: `EPI atribuído com sucesso ao colaborador.`
-        });
-        onClose();
-      } else {
-        throw new Error("Falha ao salvar uma ou mais atualizações");
-      }
-    } catch (error) {
-      console.error("Erro ao atribuir EPI:", error);
+    const employee = employees.find(emp => emp.id === selectedEmployee);
+    if (!employee) {
+      toast({
+        title: "Erro",
+        description: "Colaborador não encontrado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const instance = instances.find(inst => inst.id === itemId);
+    if (!instance) {
+      toast({
+        title: "Erro",
+        description: "Item não encontrado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const success = await assignPPEToEmployee(
+      instance.catalogItemId,
+      selectedEmployee,
+      employee,
+      reason || 'Entrega padrão'
+    );
+
+    if (success) {
+      toast({
+        title: "Sucesso",
+        description: `EPI atribuído com sucesso ao colaborador.`
+      });
+      setSelectedEmployee('');
+      setReason('');
+      onClose();
+    } else {
       toast({
         title: "Erro",
         description: "Não foi possível atribuir o EPI ao colaborador.",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ppeInstances, updatePPEInstances } from '@/data/mockData';
 import { useCatalog } from '@/hooks/useCatalog';
+import { useInventory } from '@/hooks/useInventory';
 import { DataTable } from '@/components/UI/DataTable';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowUpDown } from 'lucide-react';
@@ -16,11 +16,16 @@ import { AssignDialog } from '@/components/Inventory/AssignDialog';
 const Inventory = () => {
   const { toast } = useToast();
   const { catalogItems } = useCatalog();
-  const [localInstances, setLocalInstances] = useState(ppeInstances);
+  const { instances } = useInventory();
+  const [localInstances, setLocalInstances] = useState(instances);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+
+  useEffect(() => {
+    setLocalInstances(instances);
+  }, [instances]);
 
   useEffect(() => {
     if (!isStorageAvailable()) {
@@ -64,32 +69,7 @@ const Inventory = () => {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const handleStatusChange = (instanceId: string, newStatus: 'available' | 'in-use' | 'discarded') => {
-    try {
-      const updatedInstances = localInstances.map(instance => 
-        instance.id === instanceId ? { ...instance, status: newStatus } : instance
-      );
-      
-      setLocalInstances(updatedInstances);
-      
-      const success = updatePPEInstances(updatedInstances);
-      
-      toast({
-        title: success ? "Sucesso" : "Atenção",
-        description: success 
-          ? "Status do EPI atualizado com sucesso." 
-          : "O status foi atualizado, mas não foi possível salvar permanentemente.",
-        variant: success ? "default" : "destructive"
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao atualizar o status do EPI.",
-        variant: "destructive"
-      });
-    }
-  };
+  // Status change functionality can be removed since it's handled by the inventory system
 
   const inventoryData = localInstances.map(instance => {
     const catalogItem = catalogItems.find(item => item.id === instance.catalogItemId);
