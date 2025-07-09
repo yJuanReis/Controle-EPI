@@ -13,7 +13,7 @@ export const useInventory = () => {
   const [instances, setInstances] = useState<PPEInstance[]>(initialInstances);
   const [movements, setMovements] = useState<PPEMovement[]>(initialMovements);
   const { updateEmployeeItem } = useEmployees();
-  const { catalogItems, updateItem } = useCatalog();
+  const { catalogItems, decreaseStock, increaseStock } = useCatalog();
 
   useEffect(() => {
     setInstances(initialInstances);
@@ -67,15 +67,8 @@ export const useInventory = () => {
         assignedPPE: [...employee.assignedPPE, availableInstance.id]
       };
 
-      // Update the catalog item stock count
-      const catalogItem = catalogItems.find(item => item.id === catalogItemId);
-      if (catalogItem && catalogItem.currentStock > 0) {
-        const updatedCatalogItem = {
-          ...catalogItem,
-          currentStock: catalogItem.currentStock - 1
-        };
-        updateItem(updatedCatalogItem);
-      }
+      // Update the catalog item stock count (decrease by 1)
+      decreaseStock(catalogItemId, 1);
 
       // Save all updates
       const instancesSuccess = updatePPEInstances(updatedInstances);
@@ -133,15 +126,8 @@ export const useInventory = () => {
         assignedPPE: employee.assignedPPE.filter(id => id !== instanceId)
       };
 
-      // Update the catalog item stock count
-      const catalogItem = catalogItems.find(item => item.id === instance.catalogItemId);
-      if (catalogItem) {
-        const updatedCatalogItem = {
-          ...catalogItem,
-          currentStock: catalogItem.currentStock + 1
-        };
-        updateItem(updatedCatalogItem);
-      }
+      // Update the catalog item stock count (increase by 1)
+      increaseStock(instance.catalogItemId, 1);
 
       // Save all updates
       const instancesSuccess = updatePPEInstances(updatedInstances);

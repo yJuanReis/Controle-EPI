@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PPEItem } from '@/types';
 import { DataTable } from '@/components/UI/DataTable';
 import { Button } from '@/components/ui/button';
@@ -8,22 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AddEditItemDialog } from '@/components/Catalog/AddEditItemDialog';
 import { DeleteItemDialog } from '@/components/Catalog/DeleteItemDialog';
-import { 
-  getCatalogItems, 
-  addCatalogItem, 
-  updateCatalogItem, 
-  deleteCatalogItem 
-} from '@/utils/catalogStorage';
+import { useCatalog } from '@/hooks/useCatalog';
 
 const Catalog = () => {
-  const [catalogData, setCatalogData] = useState<PPEItem[]>([]);
+  const { catalogItems, addItem, updateItem, deleteItem } = useCatalog();
   const [addEditDialogOpen, setAddEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PPEItem | null>(null);
-
-  useEffect(() => {
-    setCatalogData(getCatalogItems());
-  }, []);
 
   const handleAddItem = () => {
     setSelectedItem(null);
@@ -41,20 +32,17 @@ const Catalog = () => {
   };
 
   const handleSaveItem = (item: PPEItem) => {
-    let updatedCatalog;
     if (selectedItem) {
       // Editando item existente
-      updatedCatalog = updateCatalogItem(item);
+      updateItem(item);
     } else {
       // Adicionando novo item
-      updatedCatalog = addCatalogItem(item);
+      addItem(item);
     }
-    setCatalogData(updatedCatalog);
   };
 
   const handleConfirmDelete = (itemId: string) => {
-    const updatedCatalog = deleteCatalogItem(itemId);
-    setCatalogData(updatedCatalog);
+    deleteItem(itemId);
   };
 
   return (
@@ -76,11 +64,11 @@ const Catalog = () => {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle>Equipamentos Registrados ({catalogData.length})</CardTitle>
+          <CardTitle>Equipamentos Registrados ({catalogItems.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable
-            data={catalogData}
+            data={catalogItems}
             columns={[
               { 
                 key: 'type', 

@@ -4,7 +4,8 @@ import {
   getCatalogItems, 
   addCatalogItem, 
   updateCatalogItem, 
-  deleteCatalogItem 
+  deleteCatalogItem,
+  updateCatalogItemStock 
 } from '@/utils/catalogStorage';
 
 export const useCatalog = () => {
@@ -32,6 +33,30 @@ export const useCatalog = () => {
     return updatedItems;
   };
 
+  const updateStock = (itemId: string, newStock: number) => {
+    const updatedItems = updateCatalogItemStock(itemId, newStock);
+    setCatalogItems(updatedItems);
+    return updatedItems;
+  };
+
+  const decreaseStock = (itemId: string, quantity: number = 1) => {
+    const item = getItemById(itemId);
+    if (item) {
+      const newStock = Math.max(0, item.currentStock - quantity);
+      return updateStock(itemId, newStock);
+    }
+    return catalogItems;
+  };
+
+  const increaseStock = (itemId: string, quantity: number = 1) => {
+    const item = getItemById(itemId);
+    if (item) {
+      const newStock = item.currentStock + quantity;
+      return updateStock(itemId, newStock);
+    }
+    return catalogItems;
+  };
+
   const getItemById = (itemId: string): PPEItem | undefined => {
     return catalogItems.find(item => item.id === itemId);
   };
@@ -49,6 +74,9 @@ export const useCatalog = () => {
     addItem,
     updateItem,
     deleteItem,
+    updateStock,
+    decreaseStock,
+    increaseStock,
     getItemById,
     getItemsByDepartment,
     getLowStockItems,

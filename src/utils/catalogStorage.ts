@@ -48,3 +48,12 @@ export const deleteCatalogItem = (itemId: string): PPEItem[] => {
   saveCatalogItems(newItems);
   return newItems;
 };
+
+export const updateCatalogItemStock = (itemId: string, newStock: number): PPEItem[] => {
+  const items = getCatalogItems();
+  const newItems = items.map(item => 
+    item.id === itemId ? { ...item, currentStock: newStock } : item
+  );
+  saveCatalogItems(newItems);
+  return newItems;
+};

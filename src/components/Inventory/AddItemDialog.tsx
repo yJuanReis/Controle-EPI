@@ -6,8 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ppeCatalog, ppeInstances, updatePPEInstances } from '@/data/mockData';
+import { ppeInstances, updatePPEInstances } from '@/data/mockData';
 import { PPEInstance } from '@/types';
+import { useCatalog } from '@/hooks/useCatalog';
 
 interface AddItemDialogProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface AddItemDialogProps {
 
 export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose }) => {
   const { toast } = useToast();
+  const { catalogItems, increaseStock } = useCatalog();
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [unitValue, setUnitValue] = useState<string>('');
@@ -34,7 +36,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
     }
 
     try {
-      const catalogItem = ppeCatalog.find(item => item.id === selectedCatalogItem);
+      const catalogItem = catalogItems.find(item => item.id === selectedCatalogItem);
       if (!catalogItem) {
         throw new Error("Item de catálogo não encontrado");
       }
@@ -64,6 +66,9 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
       // Update instances list
       const updatedInstances = [...ppeInstances, ...newInstances];
       const success = updatePPEInstances(updatedInstances);
+      
+      // Update catalog stock
+      increaseStock(selectedCatalogItem, quantity);
       
       if (success) {
         toast({
@@ -104,7 +109,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
                 <SelectValue placeholder="Selecione um tipo de EPI" />
               </SelectTrigger>
               <SelectContent>
-                {ppeCatalog.map((item) => (
+                {catalogItems.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.type} - CA: {item.approvalNumber}
                   </SelectItem>
