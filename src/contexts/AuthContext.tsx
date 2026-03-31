@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { toast } from '@/components/ui/sonner';
 
@@ -15,9 +14,15 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithCredentials: (username: string, password: string, rememberMe?: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   setUserRole: (email: string, role: 'admin' | 'user') => Promise<void>;
+  updateUserProfile: (data: {
+    name: string;
+    email: string;
+    currentPassword: string;
+    newPassword?: string;
+  }) => Promise<void>;
 }
 
 // Mock de dados de usuário para demonstração
@@ -33,7 +38,19 @@ const mockUsers: User[] = [
     name: 'Usuário Teste',
     email: 'usuario@exemplo.com',
     role: 'user',
+  },
+  {
+    id: '3',
+    name: 'Administrador',
+    email: 'admim@controleepi.com',
+    role: 'admin',
   }
+];
+
+// Credenciais para login direto 
+const validCredentials = [
+  { username: 'admin', password: 'M8n8s53489', role: 'admin' as const, name: 'Administrador', email: 'admin@controleepi.com' },
+  { username: 'Flavia', password: '12345', role: 'user' as const, name: 'Flavia', email: 'flavia@controleepi.com' }
 ];
 
 // Cria o contexto
@@ -56,108 +73,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Simula verificação de sessão ao carregar a página
   useEffect(() => {
     const checkSession = () => {
+      // Verificar no localStorage (persistente)
       const savedUser = localStorage.getItem('safetytrack_user');
+      // Verificar no sessionStorage (temporário)
+      const sessionUser = sessionStorage.getItem('safetytrack_user');
+      
       if (savedUser) {
         setUser(JSON.parse(savedUser));
+      } else if (sessionUser) {
+        setUser(JSON.parse(sessionUser));
       }
       setLoading(false);
     };
 
-    // Carrega o SDK do Google
-    const loadGoogleScript = () => {
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      document.body.appendChild(script);
-      
-      script.onload = () => {
-        // Verifica se já existe um token de usuário no localStorage
-        checkSession();
-      };
-    };
-    
-    loadGoogleScript();
+    checkSession();
   }, []);
 
-  // Função para login com Google
-  const signInWithGoogle = async () => {
+  // Função para login com credenciais (usuário/senha)
+  const signInWithCredentials = async (username: string, password: string, rememberMe = false) => {
     setLoading(true);
     try {
-      return new Promise<void>((resolve, reject) => {
-        if (!window.google) {
-          toast.error('SDK do Google não carregado. Tente novamente.');
-          setLoading(false);
-          reject(new Error('SDK do Google não carregado'));
-          return;
-        }
+      // Sanitizar entrada: remover possíveis espaços extras no início e fim
+      const sanitizedUsername = username.trim();
+      const sanitizedPassword = password;
+      
+      // Verificar nas credenciais válidas
+      const foundUser = validCredentials.find(
+        user => 
+          user.username.toLowerCase() === sanitizedUsername.toLowerCase() && 
+          user.password === sanitizedPassword
+      );
 
-        // ID de cliente do OAuth 2.0
-        // Normalmente, você precisa registrar seu aplicativo no Google Cloud Console
-        // e obter um ID de cliente. Este é um ID de exemplo.
-        const clientId = '123456789012-abc123def456ghi789jkl012mno345pq.apps.googleusercontent.com';
+      if (!foundUser) {
+        throw new Error('Credenciais inválidas. Por favor, verifique seu usuário e senha.');
+      }
 
-        const handleCredentialResponse = (response: any) => {
-          // Decodificar o token JWT
-          const decodedToken = decodeJwtResponse(response.credential);
-          
-          // Criar usuário com informações do Google
-          const googleUser: User = {
-            id: decodedToken.sub,
-            name: decodedToken.name,
-            email: decodedToken.email,
-            photoURL: decodedToken.picture,
-            role: 'user', // Por padrão, novos usuários são 'user'
-          };
+      // Criar objeto de usuário autenticado
+      const authUser: User = {
+        id: Math.random().toString(36).substr(2, 9),
+        name: foundUser.name,
+        email: foundUser.email,
+        role: foundUser.role,
+      };
 
-          // Salvar no localStorage
-          localStorage.setItem('safetytrack_user', JSON.stringify(googleUser));
-          setUser(googleUser);
-          toast.success('Login realizado com sucesso!');
-          setLoading(false);
-          resolve();
-        };
+      // Salvar no localStorage se "lembrar de mim" estiver ativado
+      if (rememberMe) {
+        localStorage.setItem('safetytrack_user', JSON.stringify(authUser));
+      } else {
+        sessionStorage.setItem('safetytrack_user', JSON.stringify(authUser));
+      }
 
-        // Função para decodificar JWT
-        function decodeJwtResponse(token: string) {
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split('')
-              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-              .join('')
-          );
-          return JSON.parse(jsonPayload);
-        }
-
-        try {
-          window.google.accounts.id.initialize({
-            client_id: clientId,
-            callback: handleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true,
-          });
-          
-          window.google.accounts.id.renderButton(
-            document.getElementById('googleLoginButton') as HTMLElement,
-            { theme: 'outline', size: 'large', width: '100%' }
-          );
-          
-          window.google.accounts.id.prompt();
-          setLoading(false);
-        } catch (error) {
-          console.error('Erro ao inicializar Google Sign-In:', error);
-          toast.error('Falha ao inicializar login com Google.');
-          setLoading(false);
-          reject(error);
-        }
-      });
+      setUser(authUser);
+      toast.success('Login realizado com sucesso!');
+      
+      return Promise.resolve();
     } catch (error) {
-      console.error('Erro ao fazer login com Google:', error);
-      toast.error('Erro ao fazer login com Google.');
+      console.error('Erro ao fazer login com credenciais:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao fazer login');
+      return Promise.reject(error);
+    } finally {
       setLoading(false);
-      throw error;
     }
   };
 
@@ -165,6 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       localStorage.removeItem('safetytrack_user');
+      sessionStorage.removeItem('safetytrack_user');
       setUser(null);
       toast.success('Logout realizado com sucesso!');
     } catch (error) {
@@ -176,10 +152,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Função para definir role de usuário
   const setUserRole = async (email: string, role: 'admin' | 'user') => {
     try {
-      // Simula uma chamada de API
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Atualiza o usuário atual se for o mesmo email
       if (user && user.email === email) {
         const updatedUser = { ...user, role };
         localStorage.setItem('safetytrack_user', JSON.stringify(updatedUser));
@@ -195,8 +169,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUserProfile = async (data: {
+    name: string;
+    email: string;
+    currentPassword: string;
+    newPassword?: string;
+  }) => {
+    try {
+      if (!user) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Validar senha atual
+      const currentUser = validCredentials.find(
+        cred => cred.email === user.email && cred.password === data.currentPassword
+      );
+
+      if (!currentUser) {
+        throw new Error('Senha atual incorreta');
+      }
+
+      // Atualizar usuário
+      const updatedUser = {
+        ...user,
+        name: data.name,
+        email: data.email
+      };
+
+      // Se houver nova senha, atualizar nas credenciais válidas
+      if (data.newPassword) {
+        const credentialIndex = validCredentials.findIndex(cred => cred.email === user.email);
+        if (credentialIndex >= 0) {
+          validCredentials[credentialIndex] = {
+            ...validCredentials[credentialIndex],
+            password: data.newPassword,
+            name: data.name,
+            email: data.email
+          };
+        }
+      }
+
+      // Atualizar no storage
+      const storage = localStorage.getItem('safetytrack_user') ? localStorage : sessionStorage;
+      storage.setItem('safetytrack_user', JSON.stringify(updatedUser));
+      
+      setUser(updatedUser);
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar perfil');
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOut, setUserRole }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      signInWithCredentials, 
+      signOut, 
+      setUserRole,
+      updateUserProfile 
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -210,7 +244,19 @@ declare global {
         id: {
           initialize: (config: any) => void;
           renderButton: (element: HTMLElement, options: any) => void;
-          prompt: () => void;
+          prompt: (callback?: (notification: {
+            isNotDisplayed: () => boolean;
+            isSkippedMoment: () => boolean;
+            getNotDisplayedReason: () => string;
+            getDismissedReason: () => string;
+            getMomentType: () => string;
+          }) => void) => void;
+          disableAutoSelect: () => void;
+        };
+        oauth2: {
+          initCodeClient: (config: any) => {
+            requestCode: () => void;
+          };
         };
       };
     };

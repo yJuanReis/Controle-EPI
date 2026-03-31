@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { useForm } from 'react-hook-form';
 
 interface ItemEstoque {
   nome: string;
-  tipo: string;
+  valorUn: number;
   ca: string;
   quantidade: number;
   fornecedor: string;
@@ -24,8 +23,25 @@ interface AdicionarEstoqueModalProps {
 const AdicionarEstoqueModal = ({ isOpen, onClose, onAdicionar }: AdicionarEstoqueModalProps) => {
   const { register, handleSubmit, formState: { errors } } = useForm<ItemEstoque>();
 
+  // Converter a data de AAAA-MM-DD para DD/MM/AAAA
+  const converterDataParaExibicao = (dataString: string): string => {
+    if (!dataString) return '';
+    
+    // Verifica se já está no formato DD/MM/AAAA
+    if (dataString.includes('/')) return dataString;
+    
+    const data = new Date(dataString);
+    return `${data.getDate().toString().padStart(2, '0')}/${(data.getMonth() + 1).toString().padStart(2, '0')}/${data.getFullYear()}`;
+  };
+
   const onSubmit = (data: ItemEstoque) => {
-    onAdicionar(data);
+    // Garantir que a quantidade seja um número e a data no formato correto
+    const itemProcessado = {
+      ...data,
+      quantidade: Number(data.quantidade),
+      validade: converterDataParaExibicao(data.validade)
+    };
+    onAdicionar(itemProcessado);
   };
 
   return (
@@ -47,13 +63,19 @@ const AdicionarEstoqueModal = ({ isOpen, onClose, onAdicionar }: AdicionarEstoqu
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo/Descrição</Label>
+              <Label htmlFor="valorUn">Valor UN (R$)</Label>
               <Input
-                id="tipo"
-                {...register("tipo", { required: "Tipo é obrigatório" })}
-                placeholder="Ex: Tipo II, Classe B"
+                id="valorUn"
+                type="number"
+                step="0.01"
+                {...register("valorUn", { 
+                  required: "Valor UN é obrigatório",
+                  min: { value: 0, message: "Valor UN não pode ser negativo" },
+                  valueAsNumber: true
+                })}
+                placeholder="Ex: 45.90"
               />
-              {errors.tipo && <span className="text-sm text-red-500">{errors.tipo.message}</span>}
+              {errors.valorUn && <span className="text-sm text-red-500">{errors.valorUn.message}</span>}
             </div>
             
             <div className="space-y-2">
@@ -73,9 +95,12 @@ const AdicionarEstoqueModal = ({ isOpen, onClose, onAdicionar }: AdicionarEstoqu
                 type="number"
                 {...register("quantidade", { 
                   required: "Quantidade é obrigatória",
-                  min: { value: 1, message: "Quantidade deve ser maior que zero" }
+                  min: { value: 1, message: "Quantidade deve ser maior que zero" },
+                  valueAsNumber: true
                 })}
                 placeholder="Ex: 25"
+                min="1"
+                step="1"
               />
               {errors.quantidade && <span className="text-sm text-red-500">{errors.quantidade.message}</span>}
             </div>
@@ -94,10 +119,13 @@ const AdicionarEstoqueModal = ({ isOpen, onClose, onAdicionar }: AdicionarEstoqu
               <Label htmlFor="validade">Data de Validade</Label>
               <Input
                 id="validade"
+                type="date"
                 {...register("validade", { required: "Data de validade é obrigatória" })}
-                placeholder="DD/MM/AAAA"
               />
               {errors.validade && <span className="text-sm text-red-500">{errors.validade.message}</span>}
+              <p className="text-xs text-gray-500">
+                O status do item será definido automaticamente com base na data de validade.
+              </p>
             </div>
           </div>
           

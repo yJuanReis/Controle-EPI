@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,34 +8,56 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEPI } from '../contexts/EPIContext';
+
+// Lista de marinas disponíveis
+const MARINAS = [
+  'Holding',
+  'Marina Verolme S/A',
+  'Marina Piratas S/A',
+  'BR Marinas Itacuruca Ltda.',
+  'Marina Porto Bracuhy S.A',
+  'Marina Ribeira Ltda.',
+  'Marina Refugio de Paraty Ltda.',
+  'BR Marinas Gloria S/A',
+  'BRM Buzios Marina Ltda.',
+  'BR Marinas JL Bracuhy S.A',
+  'BR Marinas Boa Vista Ltda'
+];
 
 interface Colaborador {
   nome: string;
   cargo: string;
   departamento: string;
   dataAdmissao: string;
-  epi: string[];
   status: 'ativo' | 'afastado' | 'férias';
+  marina: string;
+}
+
+interface EPIAtribuicao {
+  epiId: number;
+  nome: string;
+  ca: string;
+  validade: string;
 }
 
 interface AdicionarColaboradorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdicionar: (colaborador: Colaborador) => void;
+  onAdicionar: (colaborador: Colaborador) => number;
 }
 
 const AdicionarColaboradorModal = ({ isOpen, onClose, onAdicionar }: AdicionarColaboradorModalProps) => {
-  const { epis } = useEPI();
-  const [selectedEPIs, setSelectedEPIs] = useState<string[]>([]);
+  const { epis, atribuirEPI } = useEPI();
+  const [selectedEPIs, setSelectedEPIs] = useState<EPIAtribuicao[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   
   const { register, handleSubmit, setValue, formState: { errors }, reset } = useForm<Colaborador>({
     defaultValues: {
       status: 'ativo',
-      epi: [],
-      dataAdmissao: ''
+      dataAdmissao: '',
+      marina: ''
     }
   });
 
@@ -53,24 +74,46 @@ const AdicionarColaboradorModal = ({ isOpen, onClose, onAdicionar }: AdicionarCo
     }
   }, [selectedDate, setValue]);
 
-  // Gerencia a seleção de EPIs
-  const toggleEPI = (epiNome: string) => {
+  // Adiciona ou remove um EPI da lista de selecionados
+  const toggleEPI = (epi: { id: number; nome: string; ca: string; validade: string; }) => {
     setSelectedEPIs(prevSelected => {
-      if (prevSelected.includes(epiNome)) {
-        const updated = prevSelected.filter(item => item !== epiNome);
-        setValue('epi', updated);
-        return updated;
+      const isAlreadySelected = prevSelected.find(item => item.epiId === epi.id);
+      
+      if (isAlreadySelected) {
+        return prevSelected.filter(item => item.epiId !== epi.id);
       } else {
-        const updated = [...prevSelected, epiNome];
-        setValue('epi', updated);
-        return updated;
+        // Usa a validade do EPI do estoque
+        return [...prevSelected, { 
+          epiId: epi.id, 
+          nome: epi.nome, 
+          ca: epi.ca,
+          validade: epi.validade
+        }];
       }
     });
   };
 
-  const onSubmit = (data: Colaborador) => {
-    data.epi = selectedEPIs;
-    onAdicionar(data);
+  // Atualiza a validade de um EPI selecionado
+  const atualizarValidadeEPI = (epiId: number, novaValidade: string) => {
+    setSelectedEPIs(prev => 
+      prev.map(epi => 
+        epi.epiId === epiId 
+          ? { ...epi, validade: novaValidade }
+          : epi
+      )
+    );
+  };
+
+  const onSubmit = async (data: Colaborador) => {
+    // Primeiro adiciona o colaborador e obtém o ID
+    const novoColaboradorId = onAdicionar(data);
+    
+    // Atribui cada EPI selecionado ao colaborador usando o ID real
+    selectedEPIs.forEach(epi => {
+      atribuirEPI(epi.epiId, novoColaboradorId, epi.validade);
+    });
+    
+    // Limpa o formulário
     reset();
     setSelectedEPIs([]);
     setSelectedDate(undefined);
@@ -81,7 +124,7 @@ const AdicionarColaboradorModal = ({ isOpen, onClose, onAdicionar }: AdicionarCo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
           <DialogDescription>
@@ -98,6 +141,23 @@ const AdicionarColaboradorModal = ({ isOpen, onClose, onAdicionar }: AdicionarCo
                 placeholder="Ex: João Silva"
               />
               {errors.nome && <span className="text-sm text-red-500">{errors.nome.message}</span>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="marina">Marina</Label>
+              <Select onValueChange={(value) => setValue('marina', value)} {...register("marina", { required: "Marina é obrigatória" })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a marina" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MARINAS.map((marina) => (
+                    <SelectItem key={marina} value={marina}>
+                      {marina}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.marina && <span className="text-sm text-red-500">{errors.marina.message}</span>}
             </div>
             
             <div className="space-y-2">
@@ -122,15 +182,17 @@ const AdicionarColaboradorModal = ({ isOpen, onClose, onAdicionar }: AdicionarCo
             
             <div className="space-y-2">
               <Label htmlFor="dataAdmissao">Data de Admissão</Label>
-              <DatePicker 
-                date={selectedDate} 
-                setDate={setSelectedDate} 
-                placeholder="DD/MM/AAAA"
-              />
-              <input
-                type="hidden"
+              <Input 
                 id="dataAdmissao"
-                {...register("dataAdmissao", { required: "Data de admissão é obrigatória" })}
+                type="date"
+                value={selectedDate ? selectedDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  const date = new Date(e.target.value);
+                  setSelectedDate(date);
+                  const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+                  setValue('dataAdmissao', formattedDate);
+                }}
+                className="text-sm"
               />
               {errors.dataAdmissao && <span className="text-sm text-red-500">{errors.dataAdmissao.message}</span>}
             </div>
@@ -151,46 +213,51 @@ const AdicionarColaboradorModal = ({ isOpen, onClose, onAdicionar }: AdicionarCo
             
             <div className="space-y-2">
               <Label>EPIs</Label>
-              <div className="space-y-4">
-                <div className="border rounded-md p-3">
-                  <div className="mb-3 font-medium text-sm">Selecione os EPIs para este colaborador:</div>
-                  <div className="space-y-2">
-                    {episDisponiveis.map((epi) => (
-                      <div key={epi.id} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`epi-${epi.id}`} 
-                          checked={selectedEPIs.includes(epi.nome)}
-                          onCheckedChange={() => toggleEPI(epi.nome)}
-                        />
-                        <label 
-                          htmlFor={`epi-${epi.id}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {epi.nome} - CA: {epi.ca} {epi.quantidade < 10 && 
-                            <span className="text-amber-500">(Baixo estoque: {epi.quantidade})</span>}
-                        </label>
-                      </div>
-                    ))}
-                    {episDisponiveis.length === 0 && (
-                      <div className="text-red-500 text-sm">Não há EPIs disponíveis no estoque.</div>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium mb-2">EPIs selecionados:</div>
+              <Select
+                onValueChange={(value) => {
+                  const epi = epis.find(e => e.id === parseInt(value));
+                  if (epi) {
+                    toggleEPI(epi);
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione os EPIs" />
+                </SelectTrigger>
+                <SelectContent>
+                  {episDisponiveis.map((epi) => (
+                    <SelectItem 
+                      key={epi.id} 
+                      value={epi.id.toString()}
+                    >
+                      {epi.nome} {epi.quantidade < 10 && `(Estoque: ${epi.quantidade})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {selectedEPIs.length > 0 && (
+                <div className="mt-2">
                   <div className="flex flex-wrap gap-2">
-                    {selectedEPIs.length > 0 ? (
-                      selectedEPIs.map((epi, index) => (
-                        <Badge key={index} variant="secondary" className="py-1.5">
-                          {epi}
-                        </Badge>
-                      ))
-                    ) : (
-                      <div className="text-sm text-gray-500">Nenhum EPI selecionado</div>
-                    )}
+                    {selectedEPIs.map((epi) => (
+                      <Badge 
+                        key={epi.epiId}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {epi.nome}
+                        <button
+                          type="button"
+                          onClick={() => toggleEPI({ id: epi.epiId, nome: epi.nome, ca: epi.ca, validade: epi.validade })}
+                          className="ml-1 hover:text-red-500"
+                        >
+                          <X size={14} />
+                        </button>
+                      </Badge>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
           

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -6,13 +5,15 @@ import {
   Package, 
   Users, 
   FileText, 
-  ArrowDownUp, 
-  Settings 
+  ArrowDownUp,
+  ClipboardCheck
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navigation = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { user } = useAuth();
 
   const isActive = (path: string) => currentPath === path;
 
@@ -59,12 +60,12 @@ const Navigation = () => {
             <span>Relatórios</span>
           </Link>
         </li>
-        <li className={`px-4 py-2 rounded-lg transition-colors cursor-pointer flex items-center ${isActive('/gerenciar-usuarios') 
+        <li className={`px-4 py-2 rounded-lg transition-colors cursor-pointer flex items-center ${isActive('/inspecoes') 
           ? 'bg-primary-50 text-primary-700 font-medium shadow-sm' 
           : 'hover:bg-primary-50 hover:scale-105 transform transition-transform'}`}>
-          <Link to="/gerenciar-usuarios" className="flex items-center space-x-2">
-            <Settings className={`${isActive('/gerenciar-usuarios') ? 'text-primary-700' : 'text-gray-600'}`} size={18} />
-            <span>Configurações</span>
+          <Link to="/inspecoes" className="flex items-center space-x-2">
+            <ClipboardCheck className={`${isActive('/inspecoes') ? 'text-primary-700' : 'text-gray-600'}`} size={18} />
+            <span>Inspeções</span>
           </Link>
         </li>
       </ul>

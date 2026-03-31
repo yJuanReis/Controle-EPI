@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -130,6 +129,9 @@ const EPITable = () => {
                 EPI
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Valor UN
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 CA
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -156,9 +158,11 @@ const EPITable = () => {
                       <div className="font-medium text-gray-900">
                         {epi.nome}
                       </div>
-                      <div className="text-sm text-gray-500">{epi.tipo}</div>
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  R$ {epi.valorUn.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{epi.ca}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

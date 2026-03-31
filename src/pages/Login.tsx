@@ -1,15 +1,21 @@
-
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogIn } from 'lucide-react';
+import LoginErrorMessage from '@/components/LoginErrorMessage';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Login = () => {
-  const { signInWithGoogle, user } = useAuth();
+  const { signInWithCredentials, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-
+  const [error, setError] = useState<{message: string, details?: string} | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [credentialLoading, setCredentialLoading] = useState(false);
+  
   // Se o usuário já estiver autenticado, redireciona para o dashboard
   useEffect(() => {
     if (user) {
@@ -17,76 +23,123 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleGoogleLogin = async () => {
+  // Função para lidar com o login com credenciais
+  const handleCredentialLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username || !password) {
+      setError({
+        message: 'Por favor, preencha o nome de usuário e senha.',
+        details: 'Ambos os campos são obrigatórios para fazer login.'
+      });
+      return;
+    }
+    
+    setError(null);
+    setCredentialLoading(true);
+    
     try {
-      await signInWithGoogle();
+      await signInWithCredentials(username, password, rememberMe);
+      // Se o login for bem-sucedido, o useEffect irá redirecionar para o dashboard
     } catch (error) {
-      console.error('Erro ao fazer login:', error);
+      console.error('Erro ao fazer login com credenciais:', error);
+      setError({
+        message: 'Não foi possível fazer login. Por favor, verifique suas credenciais.',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    } finally {
+      setCredentialLoading(false);
     }
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-100 to-primary-50 py-12 px-4 sm:px-6 lg:px-8"
-      style={{ 
-        backgroundImage: 'url("https://images.unsplash.com/photo-1599249300635-37f1671c44b4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
-      <div className="absolute inset-0 bg-primary-900/60 backdrop-blur-sm"></div>
-      
-      <div className="max-w-md w-full space-y-8 z-10">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden">
-          <div className="bg-primary-600 py-6 px-8">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-white">SafetyTrack EPI</h1>
-              <p className="mt-2 text-sm text-primary-100">
-                Sistema de Gestão de Equipamentos de Proteção Individual
-              </p>
+    <div className="flex min-h-screen w-full bg-[#00A2FF]">
+      {/* Container do login */}
+      <div className="relative mx-auto my-auto flex max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl">
+        {/* Coluna esquerda (login) */}
+        <div className="w-full bg-[#00A2FF] p-10 md:w-1/2">
+          <div className="mx-auto max-w-md space-y-6">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-white">Bem Vindo</h1>
             </div>
-          </div>
-          
-          <div className="py-8 px-8 space-y-6">
-            <h2 className="text-center text-xl font-medium text-gray-800">Entre com sua conta</h2>
-            
-            <div className="space-y-5">
-              <div 
-                id="googleLoginButton" 
-                className="flex justify-center"
-              ></div>
+
+            {error && <LoginErrorMessage message={error.message} details={error.details} />}
+
+            <form className="space-y-5" onSubmit={handleCredentialLogin}>
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Usuário"
+                  className="h-12 rounded-full bg-white pl-4 pr-4 text-gray-800 border-none"
+                />
+              </div>
               
               <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">ou</span>
-                </div>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="• • • • • • • •"
+                  className="h-12 rounded-full bg-white pl-4 pr-4 text-gray-800 border-none"
+                />
               </div>
-              
+
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remember" 
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    className="border-white data-[state=checked]:bg-white data-[state=checked]:text-[#00A2FF]"
+                  />
+                  <label 
+                    htmlFor="remember" 
+                    className="cursor-pointer text-sm text-white"
+                  >
+                    Lembrar
+                  </label>
+                </div>
+                
+                <a href="#" className="text-sm text-white hover:underline">
+                  Esqueceu a senha?
+                </a>
+              </div>
+
+              {/* Botão de login com credenciais */}
               <Button 
-                onClick={handleGoogleLogin} 
-                className="w-full flex items-center justify-center py-6 bg-primary-600 hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                type="submit"
+                className="mt-4 h-12 w-full rounded-full bg-[#0090e0] text-white hover:bg-[#0082c9] text-md font-medium border-none shadow-md transition-colors"
                 size="lg"
+                disabled={credentialLoading}
               >
-                <LogIn className="mr-2" />
-                Entrar com Google
+                {credentialLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                    <span>Processando...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <LogIn className="mr-2 h-5 w-5" />
+                    Entrar
+                  </div>
+                )}
               </Button>
-              
-              <div className="text-center mt-6 text-sm text-gray-500">
-                <p>
-                  Ao entrar, você concorda com nossos termos e condições.
-                </p>
-              </div>
-            </div>
+            </form>
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-sm text-white/80">
-            © {new Date().getFullYear()} SafetyTrack EPI. Todos os direitos reservados.
-          </p>
+        {/* Coluna direita (imagem/logo) */}
+        <div className="hidden md:block md:w-1/2">
+          <div className="flex h-full items-center justify-center bg-white p-18">
+            <div className="text-center">
+              <h2 className="mb-2 text-5xl font-bold text-gray-800">Controle de EPI</h2>
+              <p className="text-gray-600">
+                Sistema de Gestão de Equipamentos de Proteção Individual - BR Marinas
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

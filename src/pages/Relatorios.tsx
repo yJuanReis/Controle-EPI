@@ -1,18 +1,35 @@
-
-import React from 'react';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Button } from "@/components/ui/button";
-import { FileText, Download, Filter } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from '@/components/Header';
 import Navigation from '@/components/Navigation';
+import RelatorioGeral from '@/components/RelatorioGeral';
+import RelatorioColaborador from '@/components/RelatorioColaborador';
+import RelatorioDevolvidos from '@/components/RelatorioDevolvidos';
+import BuscaAvancadaModal from '@/components/BuscaAvancadaModal';
+import { Button } from '@/components/ui/button';
+import { Search, UserSearch } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const Relatorios = () => {
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [reportType, setReportType] = useState<string>("entregas");
+  const [modalBuscaAberto, setModalBuscaAberto] = useState(false);
+  const [colaboradorSelecionado, setColaboradorSelecionado] = useState<any>(null);
+  const [termoBusca, setTermoBusca] = useState('');
+
+  const realizarBuscaSimples = () => {
+    if (!termoBusca) return;
+
+    const colaboradoresStorage = localStorage.getItem('colaboradores');
+    if (!colaboradoresStorage) return;
+
+    const colaboradores = JSON.parse(colaboradoresStorage);
+    const colaborador = colaboradores.find((c: any) => 
+      c.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    );
+
+    if (colaborador) {
+      setColaboradorSelecionado(colaborador);
+    }
+  };
 
   return (
     <div className="w-full p-6 bg-gray-50 font-sans min-h-screen">
@@ -20,152 +37,73 @@ const Relatorios = () => {
       <Navigation />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Relatórios</h1>
-        <p className="text-gray-600">Gere relatórios detalhados sobre entregas, devoluções e status dos EPIs.</p>
+        <h1 className="text-2xl font-bold text-gray-800">Relatórios</h1>
+        <p className="text-gray-600">Visualize relatórios gerais e individuais do sistema</p>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filtros de Relatório</CardTitle>
-          <CardDescription>Selecione o período e o tipo de relatório que deseja gerar</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Inicial</label>
-              <DatePicker date={startDate} setDate={setStartDate} placeholder="Data inicial" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Data Final</label>
-              <DatePicker date={endDate} setDate={setEndDate} placeholder="Data final" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Relatório</label>
-              <select 
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-              >
-                <option value="entregas">Entregas de EPIs</option>
-                <option value="devolucoes">Devoluções de EPIs</option>
-                <option value="vencimentos">EPIs Próximos ao Vencimento</option>
-                <option value="estoque">Status de Estoque</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button className="flex items-center gap-2">
-              <Filter size={16} />
-              Aplicar Filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="geral" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="geral">Relatório Geral</TabsTrigger>
+          <TabsTrigger value="individual">Relatório Individual</TabsTrigger>
+          <TabsTrigger value="devolvidos">EPIs Devolvidos</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Resultados</CardTitle>
-            <CardDescription>
-              {reportType === "entregas" && "Relatório de entregas de EPIs"}
-              {reportType === "devolucoes" && "Relatório de devoluções de EPIs"}
-              {reportType === "vencimentos" && "EPIs próximos ao vencimento"}
-              {reportType === "estoque" && "Status atual do estoque"}
-            </CardDescription>
+        <TabsContent value="geral">
+          <RelatorioGeral />
+        </TabsContent>
+
+        <TabsContent value="individual">
+          <div className="mb-6 space-y-4">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar colaborador por nome..."
+                    value={termoBusca}
+                    onChange={(e) => setTermoBusca(e.target.value)}
+                    className="pl-8"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        realizarBuscaSimples();
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setModalBuscaAberto(true)}
+                className="flex items-center gap-2"
+              >
+                <UserSearch size={16} />
+                Busca Avançada
+              </Button>
+            </div>
+
+            {colaboradorSelecionado ? (
+              <RelatorioColaborador colaborador={colaboradorSelecionado} />
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Selecione um colaborador para visualizar seu relatório individual
+              </div>
+            )}
           </div>
-          <Button variant="outline" className="flex items-center gap-2">
-            <Download size={16} />
-            Exportar CSV
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>EPI</TableHead>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reportType === "entregas" && (
-                <>
-                  <TableRow>
-                    <TableCell>12345</TableCell>
-                    <TableCell>Capacete de Segurança</TableCell>
-                    <TableCell>Carlos Silva</TableCell>
-                    <TableCell>10/01/2023</TableCell>
-                    <TableCell>Entregue</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>12346</TableCell>
-                    <TableCell>Luvas de Proteção</TableCell>
-                    <TableCell>Ana Almeida</TableCell>
-                    <TableCell>15/01/2023</TableCell>
-                    <TableCell>Entregue</TableCell>
-                  </TableRow>
-                </>
-              )}
-              {reportType === "devolucoes" && (
-                <>
-                  <TableRow>
-                    <TableCell>12347</TableCell>
-                    <TableCell>Óculos de Proteção</TableCell>
-                    <TableCell>Marcos Oliveira</TableCell>
-                    <TableCell>25/02/2023</TableCell>
-                    <TableCell>Devolvido</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>12348</TableCell>
-                    <TableCell>Respirador Semi-facial</TableCell>
-                    <TableCell>Pedro Santos</TableCell>
-                    <TableCell>28/02/2023</TableCell>
-                    <TableCell>Devolvido</TableCell>
-                  </TableRow>
-                </>
-              )}
-              {reportType === "vencimentos" && (
-                <>
-                  <TableRow>
-                    <TableCell>12349</TableCell>
-                    <TableCell>Capacete de Segurança</TableCell>
-                    <TableCell>Carlos Silva</TableCell>
-                    <TableCell>15/12/2023</TableCell>
-                    <TableCell className="text-amber-600">30 dias</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>12350</TableCell>
-                    <TableCell>Óculos de Proteção</TableCell>
-                    <TableCell>Ana Almeida</TableCell>
-                    <TableCell>10/12/2023</TableCell>
-                    <TableCell className="text-red-600">15 dias</TableCell>
-                  </TableRow>
-                </>
-              )}
-              {reportType === "estoque" && (
-                <>
-                  <TableRow>
-                    <TableCell>12351</TableCell>
-                    <TableCell>Capacete de Segurança</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="text-green-600">Em estoque (15)</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>12352</TableCell>
-                    <TableCell>Luvas de Proteção</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="text-amber-600">Baixo estoque (3)</TableCell>
-                  </TableRow>
-                </>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+
+          <BuscaAvancadaModal
+            isOpen={modalBuscaAberto}
+            onClose={() => setModalBuscaAberto(false)}
+            onSearch={(colaborador) => {
+              setColaboradorSelecionado(colaborador);
+              setModalBuscaAberto(false);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="devolvidos">
+          <RelatorioDevolvidos />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,15 +1,15 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Navigation from '../components/Navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { UserPlus, Pencil } from 'lucide-react';
+import { UserPlus, Pencil, AlertTriangle, CheckCircle, Clock, List, ArrowUpDown } from 'lucide-react';
 import AdicionarColaboradorModal from '../components/AdicionarColaboradorModal';
 import EditarColaboradorModal from '../components/EditarColaboradorModal';
 import { useToast } from '@/hooks/use-toast';
-import { useEPI } from '../contexts/EPIContext';
+import { useEPI, EPIAtribuido } from '../contexts/EPIContext';
+import DetalhesEPIColaboradorModal from '../components/DetalhesEPIColaboradorModal';
 
 interface Colaborador {
   id: number;
@@ -17,106 +17,97 @@ interface Colaborador {
   cargo: string;
   departamento: string;
   dataAdmissao: string;
-  epi: string[];
   status: 'ativo' | 'afastado' | 'férias';
+  marina: string;
 }
 
 const Colaboradores = () => {
   const { toast } = useToast();
-  const { epis, setEpis } = useEPI();
+  const { 
+    epis, 
+    setEpis, 
+    episAtribuidos, 
+    getEPIsDoColaborador, 
+    getEPIAtribuidoDetalhes 
+  } = useEPI();
   
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>([
-    {
-      id: 1,
-      nome: 'Carlos Silva',
-      cargo: 'Operador',
-      departamento: 'Produção',
-      dataAdmissao: '10/01/2020',
-      epi: ['Capacete de Segurança', 'Luvas de Proteção'],
-      status: 'ativo'
-    },
-    {
-      id: 2,
-      nome: 'Ana Almeida',
-      cargo: 'Técnica',
-      departamento: 'Laboratório',
-      dataAdmissao: '15/03/2021',
-      epi: ['Óculos de Proteção', 'Respirador Semi-facial'],
-      status: 'ativo'
-    },
-    {
-      id: 3,
-      nome: 'Marcos Oliveira',
-      cargo: 'Supervisor',
-      departamento: 'Manutenção',
-      dataAdmissao: '22/06/2019',
-      epi: ['Capacete de Segurança', 'Luvas de Proteção', 'Óculos de Proteção'],
-      status: 'férias'
-    },
-    {
-      id: 4,
-      nome: 'Pedro Santos',
-      cargo: 'Auxiliar',
-      departamento: 'Almoxarifado',
-      dataAdmissao: '05/11/2022',
-      epi: ['Luvas de Proteção', 'Respirador Semi-facial'],
-      status: 'ativo'
-    }
-  ]);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>(() => {
+    const savedColaboradores = localStorage.getItem('colaboradores');
+    return savedColaboradores ? JSON.parse(savedColaboradores) : [];
+  });
+
+  // Salva os colaboradores no localStorage sempre que houver mudanças
+  useEffect(() => {
+    localStorage.setItem('colaboradores', JSON.stringify(colaboradores));
+  }, [colaboradores]);
 
   const [modalAdicionarAberto, setModalAdicionarAberto] = useState(false);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [colaboradorParaEditar, setColaboradorParaEditar] = useState<Colaborador | null>(null);
   const [termoBusca, setTermoBusca] = useState('');
+  const [modalDetalhesAberto, setModalDetalhesAberto] = useState(false);
+  const [colaboradorParaDetalhes, setColaboradorParaDetalhes] = useState<Colaborador | null>(null);
 
-  // Função para verificar e atualizar o estoque ao adicionar ou editar colaboradores
-  const atualizarEstoqueEPI = (epiNome: string, incremento: boolean) => {
-    setEpis(currentEpis => {
-      return currentEpis.map(epi => {
-        if (epi.nome === epiNome) {
-          // Incrementa ou decrementa a quantidade
-          const novaQuantidade = incremento ? epi.quantidade + 1 : epi.quantidade - 1;
-          // Não permitir que a quantidade fique negativa
-          return { ...epi, quantidade: Math.max(0, novaQuantidade) };
-        }
-        return epi;
-      });
+  const [ordenacao, setOrdenacao] = useState<{
+    campo: keyof Colaborador | '';
+    direcao: 'asc' | 'desc';
+  }>({
+    campo: '',
+    direcao: 'asc'
+  });
+
+  const ordenarColaboradores = (colaboradores: Colaborador[]) => {
+    if (!ordenacao.campo) return colaboradores;
+
+    return [...colaboradores].sort((a, b) => {
+      const valorA = a[ordenacao.campo];
+      const valorB = b[ordenacao.campo];
+
+      if (valorA < valorB) return ordenacao.direcao === 'asc' ? -1 : 1;
+      if (valorA > valorB) return ordenacao.direcao === 'asc' ? 1 : -1;
+      return 0;
     });
   };
 
+  const alternarOrdenacao = (campo: keyof Colaborador) => {
+    setOrdenacao(prev => ({
+      campo,
+      direcao: prev.campo === campo && prev.direcao === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const colaboradoresFiltrados = ordenarColaboradores(
+    colaboradores.filter(c => 
+      c.nome.toLowerCase().includes(termoBusca.toLowerCase()) || 
+      c.departamento.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      c.cargo.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (c.marina && c.marina.toLowerCase().includes(termoBusca.toLowerCase()))
+    )
+  );
+
+  // Atualiza os colaboradores para adicionar EPIs iniciais para fins de demonstração
+  useEffect(() => {
+    // Inicializa alguns EPIs atribuídos para demonstração, se não existirem ainda
+    if (episAtribuidos.length === 0) {
+      // A lógica de atribuição será feita no modal de edição
+    }
+  }, []);
+
   const adicionarColaborador = (novoColaborador: Omit<Colaborador, 'id'>) => {
     const novoId = Math.max(0, ...colaboradores.map(c => c.id)) + 1;
-    
-    // Atualizar o estoque para cada EPI selecionado
-    novoColaborador.epi.forEach(epiNome => {
-      atualizarEstoqueEPI(epiNome, false); // false = decrementar
-    });
-    
-    setColaboradores([...colaboradores, { ...novoColaborador, id: novoId }]);
+    const colaboradorCompleto = { ...novoColaborador, id: novoId };
+    setColaboradores([...colaboradores, colaboradorCompleto]);
     setModalAdicionarAberto(false);
     
     toast({
       title: "Colaborador adicionado",
       description: `${novoColaborador.nome} foi adicionado com sucesso.`,
     });
+    
+    return colaboradorCompleto.id; // Retornar o ID para uso nos componentes
   };
 
   const editarColaborador = (colaboradorEditado: Colaborador) => {
-    // Encontrar colaborador antigo para comparar EPIs
-    const colaboradorAntigo = colaboradores.find(c => c.id === colaboradorEditado.id);
-    
-    if (colaboradorAntigo) {
-      // EPIs removidos (devolver ao estoque)
-      colaboradorAntigo.epi
-        .filter(epi => !colaboradorEditado.epi.includes(epi))
-        .forEach(epi => atualizarEstoqueEPI(epi, true));
-      
-      // EPIs adicionados (tirar do estoque)
-      colaboradorEditado.epi
-        .filter(epi => !colaboradorAntigo.epi.includes(epi))
-        .forEach(epi => atualizarEstoqueEPI(epi, false));
-    }
-    
     setColaboradores(colaboradores.map(c => 
       c.id === colaboradorEditado.id ? colaboradorEditado : c
     ));
@@ -135,27 +126,70 @@ const Colaboradores = () => {
     setModalEditarAberto(true);
   };
 
-  const colaboradoresFiltrados = colaboradores.filter(c => 
-    c.nome.toLowerCase().includes(termoBusca.toLowerCase()) || 
-    c.departamento.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    c.cargo.toLowerCase().includes(termoBusca.toLowerCase())
-  );
+  const abrirModalDetalhes = (colaborador: Colaborador) => {
+    setColaboradorParaDetalhes(colaborador);
+    setModalDetalhesAberto(true);
+  };
+
+  const getEPIsAtribuidosAoColaborador = (colaboradorId: number) => {
+    return getEPIsDoColaborador(colaboradorId);
+  };
+
+  const getEPIDetalhes = (epiAtribuido: EPIAtribuido) => {
+    const detalhes = getEPIAtribuidoDetalhes(epiAtribuido.id);
+    return detalhes?.epi.nome || "EPI não encontrado";
+  };
+
+  const getStatusIcon = (status: EPIAtribuido['status']) => {
+    switch (status) {
+      case 'vencido':
+        return <AlertTriangle size={14} className="text-red-500" />;
+      case 'proximo_vencimento':
+        return <Clock size={14} className="text-amber-500" />;
+      case 'ativo':
+        return <CheckCircle size={14} className="text-green-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusClass = (status: EPIAtribuido['status']) => {
+    switch (status) {
+      case 'vencido':
+        return "bg-red-100 text-red-800";
+      case 'proximo_vencimento':
+        return "bg-amber-100 text-amber-800";
+      case 'ativo':
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const excluirColaborador = (colaboradorId: number) => {
+    setColaboradores(prev => prev.filter(col => col.id !== colaboradorId));
+    
+    toast({
+      title: "Colaborador excluído",
+      description: "O colaborador foi excluído com sucesso.",
+    });
+  };
 
   return (
-    <div className="w-full p-6 bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-6 font-sans">
       <Header />
       <Navigation />
       
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Colaboradores</h1>
-          <Button onClick={() => setModalAdicionarAberto(true)} className="flex items-center gap-2">
-            <UserPlus size={16} />
+      <div className="bg-white rounded-xl shadow-lg p-8 border border-blue-100">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Colaboradores</h1>
+          <Button onClick={() => setModalAdicionarAberto(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-lg px-6 py-3">
+            <UserPlus size={24} />
             Adicionar Colaborador
           </Button>
         </div>
         
-        <div className="mb-6">
+        <div className="mb-8">
           <div className="flex gap-4">
             <div className="relative flex-grow">
               <Input
@@ -163,7 +197,7 @@ const Colaboradores = () => {
                 placeholder="Buscar por nome, cargo ou departamento..."
                 value={termoBusca}
                 onChange={(e) => setTermoBusca(e.target.value)}
-                className="w-full"
+                className="w-full text-lg py-6 px-4"
               />
             </div>
           </div>
@@ -172,61 +206,86 @@ const Colaboradores = () => {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Cargo/Departamento</TableHead>
-                <TableHead>Data de Admissão</TableHead>
-                <TableHead>EPIs Atribuídos</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+              <TableRow className="bg-gray-100 border-b-2 border-gray-200">
+                <TableHead 
+                  className="text-lg font-bold text-gray-800 py-4 text-center cursor-pointer hover:bg-gray-200"
+                  onClick={() => alternarOrdenacao('nome')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Nome
+                    <ArrowUpDown size={16} />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-lg font-bold text-gray-800 text-center cursor-pointer hover:bg-gray-200"
+                  onClick={() => alternarOrdenacao('marina')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Marina
+                    <ArrowUpDown size={16} />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-lg font-bold text-gray-800 text-center cursor-pointer hover:bg-gray-200"
+                  onClick={() => alternarOrdenacao('cargo')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Cargo
+                    <ArrowUpDown size={16} />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-lg font-bold text-gray-800 text-center cursor-pointer hover:bg-gray-200"
+                  onClick={() => alternarOrdenacao('departamento')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Departamento
+                    <ArrowUpDown size={16} />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-lg font-bold text-gray-800 text-center cursor-pointer hover:bg-gray-200"
+                  onClick={() => alternarOrdenacao('dataAdmissao')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Data de Admissão
+                    <ArrowUpDown size={16} />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="text-lg font-bold text-gray-800 text-center cursor-pointer hover:bg-gray-200"
+                  onClick={() => alternarOrdenacao('status')}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    Status
+                    <ArrowUpDown size={16} />
+                  </div>
+                </TableHead>
+                <TableHead className="text-lg font-bold text-gray-800 text-center">EPIs Atribuídos</TableHead>
+                <TableHead className="text-lg font-bold text-gray-800 text-center">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {colaboradoresFiltrados.map((colaborador) => (
-                <TableRow key={colaborador.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center mr-3">
-                        <span className="text-primary-600 font-medium">
-                          {colaborador.nome.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div className="font-medium">{colaborador.nome}</div>
-                    </div>
+              {colaboradoresFiltrados.map((colaborador, index) => (
+                <TableRow 
+                  key={colaborador.id} 
+                  className={`text-base ${index % 2 === 0 ? 'bg-white' : 'bg-blue-50'} hover:bg-blue-100 transition-colors`}
+                >
+                  <TableCell className="text-center">
+                    <div className="font-bold text-lg text-gray-900">{colaborador.nome}</div>
                   </TableCell>
-                  <TableCell>
-                    <div>{colaborador.cargo}</div>
-                    <div className="text-sm text-gray-500">{colaborador.departamento}</div>
+                  <TableCell className="text-center">
+                    <div className="font-semibold text-base text-gray-900">{colaborador.marina || 'Não definida'}</div>
                   </TableCell>
-                  <TableCell>{colaborador.dataAdmissao}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {colaborador.epi.map((e, i) => {
-                        // Verificar se o EPI existe e seu estado
-                        const epiInfo = epis.find(epi => epi.nome === e);
-                        const epiStatus = epiInfo?.status || "Ativo";
-                        let statusClass = "bg-primary-50 text-primary-700";
-                        
-                        if (epiStatus === "Próximo ao vencimento") {
-                          statusClass = "bg-amber-100 text-amber-800";
-                        } else if (epiStatus === "Vencido") {
-                          statusClass = "bg-red-100 text-red-800";
-                        }
-                        
-                        return (
-                          <span 
-                            key={i}
-                            className={`inline-block text-xs px-2 py-1 rounded-full ${statusClass}`}
-                            title={epiStatus}
-                          >
-                            {e}
-                          </span>
-                        );
-                      })}
-                    </div>
+                  <TableCell className="text-center">
+                    <div className="font-semibold text-base text-gray-900">{colaborador.cargo}</div>
                   </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                  <TableCell className="text-center">
+                    <div className="font-semibold text-base text-gray-900">{colaborador.departamento}</div>
+                  </TableCell>
+                  <TableCell className="text-center font-semibold text-base text-gray-900">{colaborador.dataAdmissao}</TableCell>
+                  <TableCell className="text-center">
+                    <span className={`px-3 py-1 rounded-full text-base font-semibold ${
                       colaborador.status === 'ativo' 
                         ? 'bg-green-100 text-green-800' 
                         : colaborador.status === 'férias'
@@ -236,15 +295,47 @@ const Colaboradores = () => {
                       {colaborador.status.charAt(0).toUpperCase() + colaborador.status.slice(1)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => abrirModalEditar(colaborador)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Pencil size={16} />
-                    </Button>
+                  <TableCell className="text-center">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {getEPIsAtribuidosAoColaborador(colaborador.id).map((epiAtribuido) => {
+                        const epiNome = getEPIDetalhes(epiAtribuido);
+                        return (
+                          <span 
+                            key={epiAtribuido.id}
+                            className={`inline-flex items-center gap-1 text-base px-3 py-1 rounded-full font-semibold ${getStatusClass(epiAtribuido.status)}`}
+                            title={`Atribuído em: ${epiAtribuido.dataAtribuicao} - Validade: ${epiAtribuido.validade}`}
+                          >
+                            {getStatusIcon(epiAtribuido.status)}
+                            {epiNome}
+                          </span>
+                        );
+                      })}
+                      {getEPIsAtribuidosAoColaborador(colaborador.id).length === 0 && (
+                        <span className="font-semibold text-base text-gray-900">Nenhum EPI atribuído</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="lg" 
+                        onClick={() => abrirModalDetalhes(colaborador)}
+                        className="h-10 w-10 p-0 hover:bg-blue-100"
+                        title="Ver detalhes dos EPIs"
+                      >
+                        <List size={20} className="text-gray-600" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="lg" 
+                        onClick={() => abrirModalEditar(colaborador)}
+                        className="h-10 w-10 p-0 hover:bg-blue-100"
+                        title="Editar colaborador"
+                      >
+                        <Pencil size={20} className="text-gray-600" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -264,9 +355,21 @@ const Colaboradores = () => {
       {modalEditarAberto && colaboradorParaEditar && (
         <EditarColaboradorModal 
           isOpen={modalEditarAberto}
-          onClose={() => setModalEditarAberto(false)}
+          onClose={() => {
+            setModalEditarAberto(false);
+            setColaboradorParaEditar(null);
+          }}
           onSalvar={editarColaborador}
+          onExcluir={excluirColaborador}
           colaborador={colaboradorParaEditar}
+        />
+      )}
+      
+      {modalDetalhesAberto && colaboradorParaDetalhes && (
+        <DetalhesEPIColaboradorModal
+          isOpen={modalDetalhesAberto}
+          onClose={() => setModalDetalhesAberto(false)}
+          colaborador={colaboradorParaDetalhes}
         />
       )}
     </div>
